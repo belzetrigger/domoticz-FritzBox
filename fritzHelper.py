@@ -126,9 +126,9 @@ class FritzHelper:
         self.errorMsg = None
 
     def verifyUpdate(self):
-        if(self.last_external_ip != self.external_ip
-           or self.last_is_connected != self.is_connected
-           or self.last_max_bit_rate != self.max_bit_rate
+        if(self.last_external_ip != self.external_ip or
+           self.last_is_connected != self.is_connected or
+           self.last_max_bit_rate != self.max_bit_rate
            ):
             self.needUpdate = True
         else:
@@ -202,5 +202,8 @@ class FritzHelper:
         return s
 
     def dumpStatus(self):
+        '''just print status summary
+        '''
+
         s = self.getSummary()
         Domoticz.Log(s)
