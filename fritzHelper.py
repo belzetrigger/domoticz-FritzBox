@@ -133,7 +133,7 @@ class FritzHelper:
             self.needUpdate = True
         else:
             self.needUpdate = False
-        # copy values to compare late
+        # copy values to compare later
         self.last_external_ip = self.external_ip
         self.last_is_connected = self.is_connected
         self.last_max_bit_rate = self.max_bit_rate
