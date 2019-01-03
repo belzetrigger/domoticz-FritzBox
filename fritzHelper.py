@@ -133,7 +133,7 @@ class FritzHelper:
             self.needUpdate = True
         else:
             self.needUpdate = False
-        # copy values to compare late
+        # copy values to compare later
         self.last_external_ip = self.external_ip
         self.last_is_connected = self.is_connected
         self.last_max_bit_rate = self.max_bit_rate
@@ -204,86 +204,3 @@ class FritzHelper:
     def dumpStatus(self):
         s = self.getSummary()
         Domoticz.Log(s)
-
-# connection = fc.FritzConnection(address='192.168.176.1',
-#                                 user='phone',
-#                                 password='LZ5lR1JGFxQVeRP7ZIzk')
-
-# info = connection.call_action('WANIPConnection:1', 'GetInfo')
-
-# status = connection.call_action('WANCommonInterfaceConfig:1', 'GetCommonLinkProperties')
-# status2 = connection.call_action('WANIPConnection:1', 'GetStatusInfo')
-# wanip = connection.call_action('WANIPConnection:1', 'GetExternalIPAddress')
-# status3 = connection.call_action('WANIPConnection', 'GetStatusInfo')
-# # connected = status3['NewConnectionStatus']
-
-# # wanip = wanip['NewExternalIPAddress']
-
-# info2 = connection.call_action('WLANConfiguration:3', 'GetInfo')
-# print("{}".format(info2))
-
-# print("##################\r\ntype:{}\r\nstatus:\t{}\t{}\t{}"
-#       .format(
-
-#           status["NewWANAccessType"],
-#           status["NewPhysicalLinkStatus"],
-#           wanip,
-#           status
-#       ))
-
-# status = fc.FritzStatus(
-#     address='192.168.176.1',
-#     # user='phone',
-#     # password='LZ5lR1JGFxQVeRP7ZIzk'
-# )
-
-# call = fc.FritzCall(
-#     address='192.168.176.1',
-#     user='phone',
-#     password='LZ5lR1JGFxQVeRP7ZIzk'
-# )
-
-# # Id: int
-# #         Type: int
-# #         Caller: str
-# #         Called: str
-# #         CalledNumber: str
-# #         Name: str
-# #         Numbertype: str
-# #         Device: str
-# #         Port: int
-# #         Date: datetime
-# #         Duration: timedelta
-# #         Count: str
-# #         Path: str
-# print('###################')
-# callList = call.get_calls()
-# for x in callList:
-#     print('\n\r{Date}  {Duration} {Type} {Caller} {Called} {Name} '.format(**x))
-
-# hosts = fc.FritzHosts(
-#     address='192.168.176.1',
-#     user='phone',
-#     password='LZ5lR1JGFxQVeRP7ZIzk')
-
-# print("#####################\n\r{}".format(hosts.get_hosts_info()))
-
-# fph = fc.FritzPhonebook(
-#     address='192.168.176.1',
-#     user='phone',
-#     password='LZ5lR1JGFxQVeRP7ZIzk')
-# books = fph.list_phonebooks
-# print("{}".format(fph.list_phonebooks))
-
-# print("{}".format(fph.phonebook_info(0)))
-
-# print("{}".format(fph.get_all_names(0)))
-
-
-# or more comfortable:
-# connection.reconnect()
-# connect = FritzConnection('fritz.box', 49000, 'f1', '123v!')
-
-# connect.print_api()
-# connect.call_action('DeviceInfo:1', 'GetInfo')
-# connect.call_action('WLANConfiguration:3', 'GetInfo')
