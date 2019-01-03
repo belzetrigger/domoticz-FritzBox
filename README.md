@@ -2,13 +2,14 @@
 Adds Virtual Hardware for your Fritz!Box. Fritz!Box are quite famous router from [AVM](https://en.avm.de/)
 
 
-![switch device - ON](https://github.com/belzetrigger/domoticz-FritzBox/raw/master/resources/switch_fb_on.PNG)
 
-![alert device - ok ](https://github.com/belzetrigger/domoticz-FritzBox/raw/master/resources/alert_fb_ok.png)
+<img src='https://github.com/belzetrigger/domoticz-FritzBox/raw/master/resources/switch_fb_on.PNG' width="200" alt="switch device - ON">
 
-![switch device off](https://github.com/belzetrigger/domoticz-FritzBox/raw/master/resources/switch_fb_off.PNG)
+<img  src='https://github.com/belzetrigger/domoticz-FritzBox/raw/master/resources/alert_fb_ok.png' width="200" alt="alert device - ok">
 
-![alarm device Shwoing alarm](https://github.com/belzetrigger/domoticz-FritzBox/raw/master/resources/alert_fb_alarm.png)
+<img  src='https://github.com/belzetrigger/domoticz-FritzBox/raw/master/resources/switch_fb_off.PNG' width="200" alt="switch device off">
+
+<img  src='https://github.com/belzetrigger/domoticz-FritzBox/raw/master/resources/alert_fb_alarm.png' width="200" alt="alarm device Shwoing alarm">
 
 ## Summary
 This is a virtual hardware plugin that adds information about your Fritz!Box. 
@@ -71,7 +72,7 @@ sys.path.append('/usr/lib/python3/dist-packages')
 
 
 ## State
-In development. Currently only this booth sensor are integrated. They work without user/password.
+In development. Currently only this two sensor are integrated. They work without user/password.
 
 ## Developing
 Based on https://github.com/ffes/domoticz-buienradar/ there are
