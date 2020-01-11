@@ -4,14 +4,14 @@
 #
 """
 <plugin key="FritzBox" name="Fritz!Box Plugin"
-    author="belze" version="0.5.0" >
+    author="belze" version="0.6.0" >
     <!--
     wikilink="http://www.domoticz.com/wiki/plugins/plugin.html"
     externallink="https://www.google.com/"
     //-->
     <description>
         <h2>Fritz!Box</h2><br/>
-        Add your FritzBox to Domotoicz Interface
+        Add your FritzBox to Domoticz Interface
         <h3>Features</h3>
         <ul style="list-style-type:square">
             <li>checks connection state of FritzBox</li>
@@ -34,7 +34,6 @@
         <param field="Mode3" label="Password" width="200px" required="false"
         password="true"
         />
-      
         <param field="Mode4" label="Update every x minutes" width="200px"
         required="true" default="5"/>
         <param field="Mode5" label="Debug" width="75px">
@@ -46,7 +45,7 @@
     </params>
 </plugin>
 """
-import datetime as dt
+# import datetime as dt
 from datetime import datetime, timedelta
 from os import path
 import sys
@@ -56,10 +55,10 @@ except ImportError:
     import fakeDomoticz as Domoticz
 sys.path
 sys.path.append('/usr/lib/python3/dist-packages')
-sys.path.append('/volume1/@appstore/python3/lib/python3.5/site-packages')
+# sys.path.append('/volume1/@appstore/python3/lib/python3.5/site-packages')
 # sys.path.append('/volume1/@appstore/py3k/usr/local/lib/python3.5/site-packages')
-sys.path.append('C:\\Program Files (x86)\\Python37-32\\Lib\\site-packages')
-from fritzHelper import FritzHelper
+# sys.path.append('C:\\Program Files (x86)\\Python37-32\\Lib\\site-packages')
+from fritzBoxHelper import FritzBoxHelper
 
 
 class BasePlugin:
@@ -105,7 +104,7 @@ class BasePlugin:
         self.user = Parameters["Mode2"]
         self.password = Parameters["Mode3"]
 
-        self.fritz = FritzHelper(self.host, self.user, self.password)
+        self.fritz = FritzBoxHelper(self.host, self.user, self.password)
         if self.debug is True:
             self.fritz.dumpConfig()
 

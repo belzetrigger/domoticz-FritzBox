@@ -20,27 +20,19 @@ sys.path
 sys.path.append('/volume1/@appstore/python3/lib/python3.5/site-packages')
 sys.path.append('C:\\Program Files (x86)\\Python37-32\\Lib\\site-packages')
 from datetime import datetime, timedelta
-from time import mktime
-import time as myTime
-import urllib
+# from time import mktime
+# import time as myTime
+# import urllib
 
 try:
     import Domoticz
 except ImportError:
     import fakeDomoticz as Domoticz
 
-try:
-    import fritzconnection as fc
-except SystemError as e:
-    Domoticz.Error("could not load fritzconnection ...{}".format(e))
-
-try:
-    import lxml
-except SystemError as e:
-    Domoticz.Error("could not load lxml ...{}".format(e))
+from fritzconnection.lib.fritzstatus import FritzStatus
 
 
-class FritzHelper:
+class FritzBoxHelper:
 
     def __init__(self, host: str, user: str, password: str):
         self.host = host
@@ -56,7 +48,7 @@ class FritzHelper:
             "host:\t{}".format(self.host)
         )
 
-    def needUpdate(self):
+    def needsUpdate(self):
         '''does some of the devices need an update
 
         Returns:
@@ -81,38 +73,9 @@ class FritzHelper:
     def connect(self):
         Domoticz.Debug("Try to get FritzStatus Connection")
 
-        # import lxml  # does not fail if lxml has been partially installed
-        # from lxml import etree  # fails if C extension part of lxml has not been installed
-
-        # try:
-        #     from lxml import etree
-        #     Domoticz.Log("running with lxml.etree")
-        # except ImportError:
-        #     try:
-        #         # Python 2.5
-        #         import xml.etree.cElementTree as etree
-        #         Domoticz.Log("running with cElementTree on Python 2.5+")
-        #     except ImportError:
-        #         try:
-        #             # Python 2.5
-        #             import xml.etree.ElementTree as etree
-        #             Domoticz.Log("running with ElementTree on Python 2.5+")
-        #         except ImportError:
-        #             try:
-        #                 # normal cElementTree install
-        #                 import cElementTree as etree
-        #                 Domoticz.Log("running with cElementTree")
-        #             except ImportError:
-        #                 try:
-        #                     # normal ElementTree install
-        #                     import elementtree.ElementTree as etree
-        #                     Domoticz.Log("running with ElementTree")
-        #                 except ImportError:
-        #                     Domoticz.Log("Failed to import ElementTree from any known place")
-
         # import fritzconnection as fc
-        self.fcStatus = fc.FritzStatus(
-            address=self.host,
+        self.fcStatus = FritzStatus(
+            address=self.host
         )
         Domoticz.Debug("status: {}".format(self.fcStatus))
         return self.fcStatus
@@ -126,9 +89,9 @@ class FritzHelper:
         self.errorMsg = None
 
     def verifyUpdate(self):
-        if(self.last_external_ip != self.external_ip or
-           self.last_is_connected != self.is_connected or
-           self.last_max_bit_rate != self.max_bit_rate
+        if(self.last_external_ip != self.external_ip
+           or self.last_is_connected != self.is_connected
+           or self.last_max_bit_rate != self.max_bit_rate
            ):
             self.needUpdate = True
         else:
