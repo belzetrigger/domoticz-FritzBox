@@ -1,7 +1,5 @@
 # just ot test FritzHelper a bit outside domoticz
 
-# play with imports, because on windows lxml works on start but not after update
-
 from fritzBoxHelper import FritzBoxHelper
 
 
