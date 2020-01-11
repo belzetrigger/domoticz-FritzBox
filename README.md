@@ -70,11 +70,10 @@ sys.path.append('/usr/lib/python3/dist-packages')
        So really create a new user with restricted rights
    
 ## Versions
-### till 0.5.x
-- worked with fritzconnection 0.6.x and 0.8.x
-  
-### starting from 0.6.0
-- works with new fritzconnection 1.2.1 without need of lxml
+| Version | Note                                                                               |
+| ------- | ---------------------------------------------------------------------------------- |
+| <= 0.5  | worked with fritzconnection 0.6.x and 0.8.x, needs lxml                            |
+| \>= 0.6 | works with new fritzconnection 1.2.1 and so without need of lxml but Python >= 3.6 |
 
 ## Bugs and ToDos
 - On windows system changing icons for sensors did not work, so it's standard switch icon.
