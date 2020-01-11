@@ -1,36 +1,11 @@
 # just ot test FritzHelper a bit outside domoticz
 
 # play with imports, because on windows lxml works on start but not after update
-try:
-    from lxml import etree
-    print("running with lxml.etree")
-except ImportError:
-    try:
-        # Python 2.5
-        import xml.etree.cElementTree as etree
-        print("running with cElementTree on Python 2.5+")
-    except ImportError:
-        try:
-            # Python 2.5
-            import xml.etree.ElementTree as etree
-            print("running with ElementTree on Python 2.5+")
-        except ImportError:
-            try:
-                # normal cElementTree install
-                import cElementTree as etree
-                print("running with cElementTree")
-            except ImportError:
-                try:
-                    # normal ElementTree install
-                    import elementtree.ElementTree as etree
-                    print("running with ElementTree")
-                except ImportError:
-                    print("Failed to import ElementTree from any known place")
 
-from fritzHelper import FritzHelper
+from fritzBoxHelper import FritzBoxHelper
 
 
-def runTest(fh: FritzHelper):
+def runTest(fh: FritzBoxHelper):
     fh.dumpConfig()
     fh.readStatus()
     fh.dumpStatus()
@@ -50,5 +25,5 @@ def runTest(fh: FritzHelper):
     #                  y.getAlarmLevel(), y.getAlarmText(),
     #              y.getDeviceName()))
     #
-fh = FritzHelper("fritz.box", "", "")
+fh = FritzBoxHelper("fritz.box", "", "")
 runTest(fh)
