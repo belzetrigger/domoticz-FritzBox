@@ -304,7 +304,7 @@ def updateDevice(Unit, alarmLevel, alarmData, name='', alwaysUpdate=False):
         Domoticz.Error("Devices[{}] is unknown. So we cannot update it.".format(Unit))
 
 
-# Synchronise images to match parameter in hardware page
+# Synchronize images to match parameter in hardware page
 def updateImage(Unit, picture):
     Domoticz.Debug("Image: Update Unit: {} Image: {}".format(Unit, picture))
     if Unit in Devices and picture in Images:
