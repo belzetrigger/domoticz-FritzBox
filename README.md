@@ -1,5 +1,8 @@
 # domoticz-FritzBox
-Adds Virtual Hardware for your Fritz!Box. Fritz!Box are quite famous router from [AVM](https://en.avm.de/)
+[![PyPI pyversions](https://img.shields.io/badge/python-3.6%20|%203.7%20|%203.8-blue.svg)]() [![Plugin version](https://img.shields.io/badge/version-0.6.0-red.svg)](https://github.com/belzetrigger/domoticz-FritzPresence/branches/)
+
+Adds Virtual Hardware for your Fritz!Box within domoticz. That devices shows connection information.
+Fritz!Box are quite famous router from [AVM](https://en.avm.de/)
 
 
 
@@ -13,12 +16,13 @@ Adds Virtual Hardware for your Fritz!Box. Fritz!Box are quite famous router from
 
 ## Summary
 This is a virtual hardware plugin that adds information about your Fritz!Box. 
-Therefore it generates two sensors. One alert sensor. Showing the status of the connection. One switch, showing if connection is established.
-This plugin only works with Fritz Box. 
+Therefore it generates two sensors. 
+* One alert sensor. Showing the status of the connection. 
+* One switch, showing if connection is established.
 
-This plugin is open source.
+This plugin only works with Fritz Box and is open source.
 
-This is more or less just a wrapper around python lib [fritzconnection](https://github.com/kbr/fritzconnection) from Klaus Bremer.
+It is more or less just a wrapper around python lib [fritzconnection](https://github.com/kbr/fritzconnection) from Klaus Bremer.
 Icons used are from [DomoticzIcons](https://drive.google.com/folderview?id=0B-ZLFoCiqzMRSkFaaWdHV1Qxbm8&usp=sharing) see [Domoticz Wiki](https://www.domoticz.com/wiki/Custom_icons_for_webinterface)
 
 
@@ -75,9 +79,10 @@ sys.path.append('/usr/lib/python3/dist-packages')
 ## Bugs and ToDos
 - On windows system changing icons for sensors did not work, so it's standard switch icon.
 - On windows system "update" the hardware breaks imported python libs. Plugin can not get data from FritzBox. But after restart services it works fine.
+- On Synology NAS, up to now, they official support python 3.5. So you might use a previous version of this plugin or use community python.
 
 ## State
-In development. Currently only this two sensor are integrated. They work without user/password.
+In development. Currently only this two sensor are integrated. They work without user/password. For future there might be something like reconnect, de-/activate Wifi or Guest Wifi.
 
 ## Developing
 Based on https://github.com/ffes/domoticz-buienradar/ there are
