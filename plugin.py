@@ -131,12 +131,12 @@ class BasePlugin:
         Domoticz.Log("onMessage called")
 
     def onCommand(self, Unit, Command, Level, Hue):
-        Domoticz.Log("onCommand called for Unit " +
-                     str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))
+        Domoticz.Log("onCommand called for Unit " + str(Unit) +
+                     ": Parameter '" + str(Command) + "', Level: " + str(Level))
 
     def onNotification(self, Name, Subject, Text, Status, Priority, Sound, ImageFile):
-        Domoticz.Log("Notification: " + Name + "," +
-                     Subject + "," + Text + "," + Status + "," + str(Priority) + "," + Sound + "," + ImageFile)
+        Domoticz.Log("Notification: " + Name + "," + Subject + "," + Text + "," +
+                     Status + "," + str(Priority) + "," + Sound + "," + ImageFile)
 
     def onDisconnect(self, Connection):
         Domoticz.Log("onDisconnect called")
@@ -153,7 +153,7 @@ class BasePlugin:
 
             # check for error
             if(self.fritz is None or self.fritz.hasError is True):
-                Domoticz.Error("Uuups. Something went wrong ... Shouldn't be here.")
+                Domoticz.Error("Uuups (Fritz!Box). Something went wrong ... Shouldn't be here.")
                 t = "Error"
                 if self.debug is True and self.fritz is not None:
                     Domoticz.Debug(self.fritz.getSummary())
@@ -162,6 +162,7 @@ class BasePlugin:
                 updateDevice(1, 0, t, 'Fritz!Box - Error')
                 updateDevice(2, 3, t)
                 # updateImage(1, 'FritzBoxWan48_Off')
+                self.nextpoll = myNow  # just try again with next heart beat
             else:
                 # check if
                 if self.fritz.needUpdate is True:
@@ -310,7 +311,7 @@ def updateImage(Unit, picture):
     if Unit in Devices and picture in Images:
         Domoticz.Debug("Image: Name:{}\tId:{}".format(picture, Images[picture].ID))
         if Devices[Unit].Image != Images[picture].ID:
-            Domoticz.Log("Image: Device Image update: 'Fritz!Box', Currently " +
+            Domoticz.Log("Image: Device update: 'Fritz!Box', Currently " +
                          str(Devices[Unit].Image) + ", should be " + str(Images[picture].ID))
             Devices[Unit].Update(nValue=Devices[Unit].nValue, sValue=str(Devices[Unit].sValue),
                                  Image=Images[picture].ID)
