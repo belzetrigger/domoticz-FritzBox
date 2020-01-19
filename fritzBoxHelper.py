@@ -39,6 +39,8 @@ class FritzBoxHelper:
         self.user = user
         self.password = password
         self.debug = False
+        self.hasError = False
+        self.previousError = False
         self.lastUpdate = datetime.now()
         self.nextpoll = datetime.now()
         self.reset()
@@ -85,13 +87,15 @@ class FritzBoxHelper:
         self.errorMsg = error
 
     def resetError(self):
+        self.previousError = self.hasError
         self.hasError = False
         self.errorMsg = None
 
     def verifyUpdate(self):
-        if(self.last_external_ip != self.external_ip
-           or self.last_is_connected != self.is_connected
-           or self.last_max_bit_rate != self.max_bit_rate
+        if(self.last_external_ip != self.external_ip or
+           self.last_is_connected != self.is_connected or
+           self.last_max_bit_rate != self.max_bit_rate or
+           self.previousError is True
            ):
             self.needUpdate = True
         else:
@@ -105,6 +109,7 @@ class FritzBoxHelper:
     def readStatus(self):
         Domoticz.Debug("read status for {}".format(self.host))
         try:
+            self.resetError()
             if(self.fcStatus is None):
                 self.connect()
             fs = self.fcStatus
