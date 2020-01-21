@@ -1,8 +1,7 @@
 # domoticz-FritzBox
 [![PyPI pyversions](https://img.shields.io/badge/python-3.6%20|%203.7%20|%203.8-blue.svg)]() [![Plugin version](https://img.shields.io/badge/version-0.6.0-red.svg)](https://github.com/belzetrigger/domoticz-FritzPresence/branches/)
 
-Adds Virtual Hardware for your Fritz!Box within domoticz. That devices show connection information.
-Fritz!Box are quite famous router from [AVM](https://en.avm.de/)
+Adds Virtual Hardware for your [Fritz!Box](https://en.avm.de/, 'Fritz!Box are quite famous router from avm') within domoticz. That devices show connection information.
 
 
 
@@ -35,8 +34,8 @@ Icons used are from [DomoticzIcons](https://drive.google.com/folderview?id=0B-ZL
  
   
 ## Installation and Setup
-- a running Domoticz, tested with 4.10038
-- Python 3
+- a running Domoticz, tested with 4.10717 and Python 3.8
+- Python >= 3.6 (mainly depending on requirements for fritzconnection)
 - install needed python modules:
    - fritzconnection Version 1.2.1
 - clone project
