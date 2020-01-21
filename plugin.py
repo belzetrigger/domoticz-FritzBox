@@ -73,9 +73,11 @@ class BasePlugin:
         self.user = None
         self.password = None
         self.pollinterval = 60 * 5
+        self.errorCounter = 0
         return
 
     def onStart(self):
+        self.errorCounter = 0
         if Parameters["Mode5"] == 'Debug':
             self.debug = True
             Domoticz.Debugging(1)
@@ -131,12 +133,12 @@ class BasePlugin:
         Domoticz.Log("onMessage called")
 
     def onCommand(self, Unit, Command, Level, Hue):
-        Domoticz.Log("onCommand called for Unit " + str(Unit) +
-                     ": Parameter '" + str(Command) + "', Level: " + str(Level))
+        Domoticz.Log("onCommand called for Unit " + str(Unit)
+                     + ": Parameter '" + str(Command) + "', Level: " + str(Level))
 
     def onNotification(self, Name, Subject, Text, Status, Priority, Sound, ImageFile):
-        Domoticz.Log("Notification: " + Name + "," + Subject + "," + Text + "," +
-                     Status + "," + str(Priority) + "," + Sound + "," + ImageFile)
+        Domoticz.Log("Notification: " + Name + "," + Subject + "," + Text + ","
+                     + Status + "," + str(Priority) + "," + Sound + "," + ImageFile)
 
     def onDisconnect(self, Connection):
         Domoticz.Log("onDisconnect called")
@@ -154,16 +156,26 @@ class BasePlugin:
             # check for error
             if(self.fritz is None or self.fritz.hasError is True):
                 Domoticz.Error("Uuups (Fritz!Box). Something went wrong ... Shouldn't be here.")
+                self.errorCounter += 1
+                self.nextpoll = myNow  # just try again with next heart beat
+
+                # only show error after 2 error
                 t = "Error"
                 if self.debug is True and self.fritz is not None:
                     Domoticz.Debug(self.fritz.getSummary())
                 if(self.fritz is not None and self.fritz.hasError is True):
                     t = "{}:{}".format(t, self.fritz.errorMsg)
-                updateDevice(1, 0, t, 'Fritz!Box - Error')
-                updateDevice(2, 3, t)
+
+                if(self.errorCounter >= 2):
+                    Domoticz.Debug("Error and threshold reached -> so show error on devices")
+                    updateDevice(1, 0, t, 'Fritz!Box - Error')
+                    updateDevice(2, 3, t)
+                else:
+                    Domoticz.Debug("Error happend but under threshold, so we wait next heartbeat")
                 # updateImage(1, 'FritzBoxWan48_Off')
-                self.nextpoll = myNow  # just try again with next heart beat
+
             else:
+                self.errorCounter = 0
                 # check if
                 if self.fritz.needUpdate is True:
                     alarm = 1
@@ -311,8 +323,8 @@ def updateImage(Unit, picture):
     if Unit in Devices and picture in Images:
         Domoticz.Debug("Image: Name:{}\tId:{}".format(picture, Images[picture].ID))
         if Devices[Unit].Image != Images[picture].ID:
-            Domoticz.Log("Image: Device update: 'Fritz!Box', Currently " +
-                         str(Devices[Unit].Image) + ", should be " + str(Images[picture].ID))
+            Domoticz.Log("Image: Device update: 'Fritz!Box', Currently "
+                         + str(Devices[Unit].Image) + ", should be " + str(Images[picture].ID))
             Devices[Unit].Update(nValue=Devices[Unit].nValue, sValue=str(Devices[Unit].sValue),
                                  Image=Images[picture].ID)
             # Devices[Unit].Update(int(alarmLevel), alarmData, Name=name)
