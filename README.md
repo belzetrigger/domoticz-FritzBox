@@ -66,7 +66,7 @@ sys.path.append('/usr/lib/python3/dist-packages')
 | ----------- | --------------------------------------------------------------------------------------------------- |
 | host        | insert host name or Ip - default is fritz.box                                                       |
 | Update time | polling time. <br> Something like 3 or 5 min should work and do not stress the router too much      |
-| Debug       | if True, the log will be hold a lot more output. Its good if something does not work like expected. |
+| Debug       | if True, the log will hold a lot more output. Its good if something does not work like expected. |
 
 
 |          | to control guest wifi                                                                                         |
