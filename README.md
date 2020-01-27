@@ -91,7 +91,7 @@ sys.path.append('/usr/lib/python3/dist-packages')
 In development. Currently only this three devices integrated. Guest Wifi is new and there fore might be a bit unstable. The other two run now quite a while on my machine without big issues.
 
 ## Developing
-For TR064 actions codes see [AVMs Documentation](https://avm.de/fileadmin/user_upload/Global/Service/Schnittstellen/wlanconfigSCPD.pdf)
+For TR064 actions codes see [AVMs Documentation](https://avm.de/fileadmin/user_upload/Global/Service/Schnittstellen/wlanconfigSCPD.pdf)<br>
 Based on https://github.com/ffes/domoticz-buienradar/ there are
  -  `fakeDomoticz.py` - used to run it outside of Domoticz
  -  `test.py` it's the entry point for tests
