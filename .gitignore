@@ -124,5 +124,5 @@ venv.bak/
 
 info.prv
 test_prv.py
-tesThread_prv.py
+testThread_prv.py
 foo.py

@@ -4,7 +4,7 @@
 #
 """
 <plugin key="FritzBox" name="Fritz!Box Plugin"
-    author="belze" version="0.6.0" >
+    author="belze" version="0.6.2" >
     <!--
     wikilink="http://www.domoticz.com/wiki/plugins/plugin.html"
     externallink="https://www.google.com/"
@@ -17,11 +17,15 @@
             <li>checks connection state of FritzBox</li>
             <li>shows details of connections</li>
             <li>uses fritz box model as name for devices</li>
+            <li>easily turn guest wifi on or off</li>
+            <li>activate WPS mode for guest wifi</li>
+            <li>leave user/password empty and remove wifi from used to "unused" devices - and you can run FB Plugin in password free mode FB Status/<li>
         </ul>
         <h3>Devices</h3>
         <ul style="list-style-type:square">
             <li>switch - shows if Box is connected or not</li>
             <li>alarm - shows details of your box and if not connected is red</li>
+            <li>selector switch - turn guest Wifi on/off or activate WPS</li>
         </ul>
         <h3>Configuration</h3>
         Configuration options...
@@ -60,6 +64,14 @@ sys.path.append('/usr/lib/python3/dist-packages')
 # sys.path.append('C:\\Program Files (x86)\\Python37-32\\Lib\\site-packages')
 from fritzBoxHelper import FritzBoxHelper
 
+# config 
+WLAN3_NAME = "GuestWifi"        # Name of the device shown in domoticz, standard 'GuestWifi'
+WLAN_ENABLE_WPS = 23            # number we use internal to mark a switch, to turn on wps as well
+
+ERROR_THRESHOLD = 2             # how many times an error fb error can happen, before we show Error also in domoticz, standard: 2
+ICON_FritzBox = "FritzBoxWan"   # icon used for fritz box switch and alert
+ICON_WIFI = "FritzBoxWifi"           # normal wifi icon
+ICON_WIFI_WPS = "FritzBoxWPS"     # icon set if wps is used
 
 class BasePlugin:
     enabled = False
@@ -74,7 +86,7 @@ class BasePlugin:
         self.password = None
         self.pollinterval = 60 * 5
         self.errorCounter = 0
-        return
+        self.wlanOptions = {}
 
     def onStart(self):
         self.errorCounter = 0
@@ -106,21 +118,39 @@ class BasePlugin:
         self.user = Parameters["Mode2"]
         self.password = Parameters["Mode3"]
 
+        self.wlanOptionNames = "Off|On|WPS"
+        self.wpsLevel = 20
+        self.onLevel = 10
+        LevelActions = self.wlanOptionNames.count('|')
+        Domoticz.Debug('LevelActions {}'.format(LevelActions ))
+        self.wlanOptions = {'LevelActions': '|asas|asas',
+                             'LevelNames': self.wlanOptionNames,
+                             'LevelOffHidden': 'false',
+                             'SelectorStyle': '0'}
+
+
         self.fritz = FritzBoxHelper(self.host, self.user, self.password)
         if self.debug is True:
             self.fritz.dumpConfig()
 
         # check images
         checkImages("FritzBox", "FritzBox.zip")
+        checkImages(ICON_WIFI, ICON_WIFI + ".zip")
+        checkImages(ICON_WIFI_WPS, ICON_WIFI_WPS + ".zip")
+      
+        
 
         # Check if devices need to be created
-        createDevices()
+        createDevices(self.wlanOptions)
 
         # init with empty data
-        updateDevice(1, 0, "No Data")
-        updateDevice(2, 0, "No Data")
-        updateImage(1, 'FritzBoxWan')
-        updateImage(2, 'FritzBoxWan')
+        updateDevice(1, 0, "Init - No Data")
+        updateDevice(2, 0, "Init - No Data")
+        updateDevice(3, 0, "Init - No Data", WLAN3_NAME)
+        updateImage(1, ICON_FritzBox)
+        updateImage(2, ICON_FritzBox)
+        updateImage(3, ICON_WIFI)
+
 
     def onStop(self):
         self.fritz.stop()
@@ -133,8 +163,74 @@ class BasePlugin:
         Domoticz.Log("onMessage called")
 
     def onCommand(self, Unit, Command, Level, Hue):
-        Domoticz.Log("onCommand called for Unit " + str(Unit)
-                     + ": Parameter '" + str(Command) + "', Level: " + str(Level))
+        Domoticz.Debug("onCommand called for Unit: {} Parameter: {} Level: {} ".format(str(Unit), str(Command), str(Level)))
+        Command = Command.strip()
+        action, sep, params = Command.partition(' ')
+        action = action.capitalize()
+        params = params.capitalize()
+        
+        try:
+            if (Unit == 3):     # guest wlan
+                if (action == "On"):
+                    Domoticz.Debug("On")
+                    self.switchWlan(nr=3, enable=1)                    
+                elif (action == "Set"):
+                    Domoticz.Debug("Set")
+                    if(Level == self.onLevel):
+                        Domoticz.Debug("Set On")
+                        self.switchWlan(nr=3, enable=1)
+                        #r = self.fritz.fbWlanSwitch(nr=3, enable=1)
+                        #s=self.fritz.fbWlanGetSsid(nr=3)
+                        #updateImage(3, ICON_WIFI)
+                        #Devices[3].Update(1, "On", Name=WLAN3_NAME+':'+s)
+                    
+                    elif(Level == self.wpsLevel):
+                        Domoticz.Debug("Set WPS")
+                        self.switchWlan(nr=3, enable=WLAN_ENABLE_WPS)
+                        # r = self.fritz.fbWlanWpsSwitch(nr=3, enable=1)
+                        # s=self.fritz.fbWlanGetSsid(nr=3)
+                        # Devices[3].Update(1, "WPS", Name=WLAN3_NAME+':'+s+':WPS')
+                        updateImage(3, ICON_WIFI_WPS)
+                        
+                elif (action == "Off"):
+                    Domoticz.Debug("Off")
+                    self.switchWlan(nr=3, enable=0)
+                    #r = self.fritz.fbWlanSwitch(nr=3, enable=0)
+                    #updateImage(3, ICON_WIFI)
+                    #Devices[3].Update(0, "Off", Name=WLAN3_NAME+':Off')
+            
+        except (Exception) as e:
+            Domoticz.Error("Error on deal with wifi guest: msg '{}';".format(e))
+
+
+    def switchWlan(self, nr: int = 3, enable: int = 1):
+        state = "On"
+        ssid= ""
+        r=""
+        if(enable >= 1):
+            r = self.fritz.getWlan().fbWlanSwitch(enable=1)
+            ssid = self.fritz.getWlan().getFBSsid()
+            state = "On"
+            # TODO we can cover wps here as well
+            if(enable == WLAN_ENABLE_WPS):
+                r = self.fritz.getWlan().fbWlanWpsSwitch(enable=1)
+                state = "WPS"
+                ssid += ":WPS"
+                enable = 1
+            #            Devices[3].Update(1, "WPS", Name=WLAN3_NAME+':'+s+':WPS')
+            #            updateImage(3, ICON_WIFI_WPS)
+
+        else:
+            r = self.fritz.getWlan().fbWlanSwitch(enable=enable)
+            state = "Off"
+
+        Domoticz.Log("turn wlan no:{} {}".format(nr, state))
+        self.updateWlanDevice(unit=3, enable=enable, state=state, ssid=ssid)
+       
+
+    def updateWlanDevice(self, unit: int = 3, image: str = ICON_WIFI, enable: int = 1, state: str = "On", ssid: str = ""):
+        updateImage(unit, image)
+        Devices[unit].Update(enable, state, Name=WLAN3_NAME + ':' + state + ' ' + ssid)
 
     def onNotification(self, Name, Subject, Text, Status, Priority, Sound, ImageFile):
         Domoticz.Log("Notification: " + Name + "," + Subject + "," + Text + ","
@@ -166,14 +262,14 @@ class BasePlugin:
                 if(self.fritz is not None and self.fritz.hasError is True):
                     t = "{}:{}".format(t, self.fritz.errorMsg)
 
-                if(self.errorCounter >= 2):
+                if(self.errorCounter >= ERROR_THRESHOLD):
                     Domoticz.Debug("Error and threshold reached -> so show error on devices")
                     updateDevice(1, 0, t, 'Fritz!Box - Error')
                     updateDevice(2, 3, t)
+                    # TODO switch to off?
+                    # updateImage(1, 'FritzBoxWan48_Off')
                 else:
                     Domoticz.Debug("Error happend but under threshold, so we wait next heartbeat")
-                # updateImage(1, 'FritzBoxWan48_Off')
-
             else:
                 self.errorCounter = 0
                 # check if
@@ -186,8 +282,51 @@ class BasePlugin:
                     # device 1 == switch
                     updateDevice(1, connected, "", self.fritz.getDeviceNameWithMB())
                     updateDevice(2, alarm, self.fritz.getShortSummary("; "), self.fritz.getDeviceNameWithMB())
-                    updateImage(2, 'FritzBoxWan')
+                    # force init and reading status of wlan
+                    Domoticz.Debug("{} is used: {}".format(WLAN3_NAME, Devices[3].Used))
+                    if(Devices[3].Used == 0 or Devices[3].Used == "0"):
+                        Domoticz.Log("{} is marked as unused. So we skip reading status".format(WLAN3_NAME))
+                    else:
+                        self.fritz.readWlanStatus()
+                        wlan=self.fritz.getWlan()
+                        if(wlan and wlan.hasError is False):
+                            Domoticz.Debug("Wlan status {} ".format(wlan.getSummary()))
+                            # TODO check if guest wifi is available
+                            if(wlan.needsUpdate()):
+                                Domoticz.Debug("Wlan needs to be updated. {} ".format(wlan.getSummary()))
+                                ssid = wlan.getFBSsid()
+                                state = "Off"
+                                enable = 0
+                                img = ICON_WIFI
+                                if(wlan.isFBWpsEnabled()):
+                                    state = "WPS"
+                                    enable = 1
+                                    img = ICON_WIFI_WPS
+                                elif(wlan.isFBWlanEnabled()):
+                                    state = "On"
+                                    enable = 1
+                                self.updateWlanDevice(unit=3, enable=enable, 
+                                    state=state, ssid=ssid, image=img)
+
+                        else:
+                            e = "Error - check log"
+                            if(wlan):
+                                e = "Error {} ".format(wlan.errorMsg)
+                            self.updateWlanDevice(unit=3, enable=0, state=e)
+        
+
+                    #if(self.fritz.fbWlanIsEnabled()):
+                    #    ssid=self.fritz.fbWlanGetSsid()
+                    #   # updateDevice(3, 1, "", ssid)
+                    #else:
+                    #   # updateDevice(3, 0, "", WLAN3_NAME)
+
+                    #updateImage(3, 'FritzBoxWan')
+                    #updateDevice(3, 0, "", WLAN3_NAME)
             Domoticz.Debug("----------------------------------------------------")
+
+
+
 
 
 global _plugin
@@ -256,11 +395,14 @@ def checkImages(sName: str, sZip: str):
     # Check if images are in database
     if sName not in Images:
         Domoticz.Image(sZip).Create()
+    #image = Images[sName].ID
+    #Domoticz.Debug("Image created. ID: " + str(image))
+        # Domoticz.Error("pic:{} -> {}".format(sName ))
 
 
-def createDevices():
+def createDevices(opts):
     '''
-    this creates the alarm device for waste collection
+    this creates the alarm device for fritz box
     '''
     # create the mandatory child devices if not yet exist
     if 1 not in Devices:
@@ -273,6 +415,18 @@ def createDevices():
         Domoticz.Device(Name="Fritz!Box", Unit=2, TypeName="Alert",
                         Used=1).Create()
         Domoticz.Log("Devices[2] created.")
+
+    if 3 not in Devices:
+        # TODO which image?
+        # Image=5
+        
+        Domoticz.Device(Name="Guest WLan", Unit=3, TypeName="Selector Switch", 
+                        Used=1,
+                        Switchtype=18, Options=opts).Create()
+                        
+        Domoticz.Log("Devices[3] created.")
+
+    
 
 # Update Device into database
 
@@ -329,5 +483,8 @@ def updateImage(Unit, picture):
                                  Image=Images[picture].ID)
             # Devices[Unit].Update(int(alarmLevel), alarmData, Name=name)
     else:
-        Domoticz.Error("Image: Unit or Picture unknown")
+        Domoticz.Error("Image: Unit {} or Picture {} unknown".format(Unit, picture))
+        for picture in Images:
+            Domoticz.Error("pic:{} id:{} base: {} descr: {}".format(picture, Images[picture].ID , Images[picture].Base,
+                Images[picture].Description))
     return

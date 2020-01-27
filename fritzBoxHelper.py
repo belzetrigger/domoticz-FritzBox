@@ -1,17 +1,17 @@
 # this is our helper class to do the work with FritzConnection
 #
-# Attribute 	Description
-# is_linked 	True if the FritzBox is physically linked to the provider
-# is_connected 	True if the FritzBox has established an internet-connection
-# wan_access_type 	Connection-type, can be DSL or Cable
-# external_ip 	External ip address
-# uptime 	Uptime in seconds
-# bytes_sent 	Bytes sent
-# bytes_received 	Bytes received
-# transmission_rate_up 	Current upstream speed in bytes/s
-# transmission_rate_down 	Current downstream speed in bytes/s
-# max_byte_rate_up 	Maximum upstream-rate in bytes/s
-# max_byte_rate_down 	Maximum downstream-rate in bytes/s
+# Attribute     Description
+# is_linked     True if the FritzBox is physically linked to the provider
+# is_connected  True if the FritzBox has established an internet-connection
+# wan_access_type   Connection-type, can be DSL or Cable
+# external_ip   External ip address
+# uptime    Uptime in seconds
+# bytes_sent    Bytes sent
+# bytes_received    Bytes received
+# transmission_rate_up  Current upstream speed in bytes/s
+# transmission_rate_down    Current downstream speed in bytes/s
+# max_byte_rate_up  Maximum upstream-rate in bytes/s
+# max_byte_rate_down    Maximum downstream-rate in bytes/s
 
 import sys
 sys.path
@@ -30,11 +30,152 @@ except ImportError:
     import fakeDomoticz as Domoticz
 
 from fritzconnection.lib.fritzstatus import FritzStatus
+from fritzconnection import FritzConnection
+
+
+class Wlan:
+    def __init__(self, nr: int = 3):
+        self.isInit = True
+        self.previousError = None
+        self.hasError = False
+        self.errorMsg = None
+        self.fc: FritzConnection = None
+        self.nr = nr
+        self.ssid = None
+        self.isEnabled = False
+        self.isWpsEnabled = False
+        self.lastSsid = None
+        self.lastIsEnabled = False
+        self.lastIsWpsEnabled = False
+        self.needUpdate = True  # init with true, so first time update..
+        self.reset()
+
+    def reset(self):
+        self.isInit = True
+        self.previousError = None
+        self.hasError = False
+        self.errorMsg = None
+        self.fc = None
+        self.ssid = None
+        self.isEnabled = False
+        self.isWpsEnabled = False
+        self.lastSsid = None
+        self.lastIsEnabled = False
+        self.lastIsWpsEnabled = False
+        self.needUpdate = False
+
+    def getSummary(self):
+        return "Wlan{} is on:{} and wps on: {}".format(self.nr, self.isEnabled, self.isWpsEnabled)
+
+    def setMyError(self, error):
+        self.hasError = True
+        self.errorMsg = error
+
+    def resetError(self):
+        self.previousError = self.hasError
+        self.hasError = False
+        self.errorMsg = None
+
+    def setFc(self, fc: FritzConnection):
+        self.fc = fc
+
+    def needsUpdate(self):
+        return self.needUpdate
+
+    def verifyUpdate(self):
+        # TODO always update on init and error
+        if(self.lastIsEnabled != self.isEnabled or
+           self.lastIsWpsEnabled != self.isWpsEnabled or
+           self.isInit
+           ):
+            self.needUpdate = True
+        else:
+            self.needUpdate = False
+        # copy values to compare later
+        self.lastIsEnabled = self.isEnabled
+        self.lastIsWpsEnabled = self.isWpsEnabled
+        Domoticz.Debug("Wlan {} updated needed?: {}".format(self.nr, self.needUpdate))
+
+    def readStatus(self):
+        Domoticz.Debug("Wlan {} read status".format(self.nr))
+        # TODO should we read it here?
+        try:
+            self.resetError()
+            if(self.fc is None):
+                raise Exception("Wlan readStatus - missing fc")
+            self.ssid = self.getFBSsid()
+            self.isEnabled = self.isFBWlanEnabled()
+            self.isWpsEnabled = self.isFBWpsEnabled()
+            self.verifyUpdate()
+            self.isInit = False
+        except (Exception) as e:
+            self.setMyError(e)
+            Domoticz.Error("Error on Wlan readStatus:  msg '{}'; hasError:{}".format(e, str(self.hasError)))
+
+    def getFBWlanInfo(self):
+        Domoticz.Debug("getFBWlanInfo for Wlan:{} - fc: {}".format(self.nr, self.fc))
+        result = self.fc.call_action('WLANConfiguration' + str(self.nr), 'GetInfo')
+        return result
+
+    def getFBSsid(self):
+        result = self.getFBWlanInfo()
+        return result["NewSSID"]
+
+    def isFBWlanEnabled(self):
+        result = self.getFBWlanInfo()
+        return (result["NewEnable"] == 1)
+
+    def fbWlanSwitch(self, enable: int = 1):
+        # fc = self.fbGetFc()
+        self.fc.call_action('WLANConfiguration' + str(self.nr), 'SetEnable', NewEnable=enable)
+        result = self.getFBWlanInfo()
+        r = result['NewEnable']
+        Domoticz.Debug("WLan:{} enable:{} => isEnabled:{}".format(self.nr, enable, r))
+        return r
+
+    def getFBWlanWpsInfo(self):
+        # fc = self.fbGetFc()
+        result = self.fc.call_action('WLANConfiguration:' + str(self.nr), 'X_AVM-DE_GetWPSInfo')
+        return result  # ["NewX_AVM-DE_WPSStatus"]
+
+    def isFBWpsEnabled(self):
+        result = self.getFBWlanWpsInfo()
+        return result["NewX_AVM-DE_WPSStatus"] == "active"
+
+    def fbWlanWpsSwitch(self, enable: int = 1):
+        # fc = self.fbGetFc()
+        result = []
+        if(enable == 1):
+            # https://avm.de/fileadmin/user_upload/Global/Service/Schnittstellen/wlanconfigSCPD.pdf
+            # Actionname: X_AVM - DE_SetWPSConfig
+            # ('NewX_AVM-DE_WPSAPPIN', 'out', 'string')
+            # ('NewX_AVM-DE_WPSClientPIN', 'in', 'string')
+            # ('NewX_AVM-DE_WPSMode', 'in', 'string')
+            # ('NewX_AVM-DE_WPSStatus', 'out', 'string')
+            # mode: pbc, pin_ap, pin_client (needs pin)
+            arg = {'NewX_AVM-DE_WPSMode': 'pbc',
+                   'NewX_AVM-DE_WPSClientPIN': ''}
+            # arg = {'NewX_AVM-DE_PhoneNumber': number}
+            # self.fc.call_action('X_VoIP1', 'X_AVM-DE_DialNumber', arguments=arg)
+            # X_AVM-DE_SetWPSConfig
+            result = self.fc.call_action('WLANConfiguration:' + str(self.nr), 'X_AVM-DE_SetWPSConfig',
+                                         arguments=arg)
+        else:
+            arg = {'NewX_AVM-DE_WPSMode': 'stop',
+                   'NewX_AVM-DE_WPSClientPIN': ''}
+            result = self.fc.call_action('WLANConfiguration:' + str(self.nr), 'X_AVM-DE_SetWPSConfig',
+                                         arguments=arg)
+        r = result['NewX_AVM-DE_WPSStatus']
+        Domoticz.Debug("WLan:{} WpsEnable:{} => isEnabled:{}".format(self.nr, enable, r))
+        return result
+        # h = fc.call_action('WLANConfiguration3', 'X_AVM-DE_GetWPSInfo')
+        # print(h["NewX_AVM-DE_WPSStatus"])
 
 
 class FritzBoxHelper:
 
     def __init__(self, host: str, user: str, password: str):
+        self.fc = None
         self.host = host
         self.user = user
         self.password = password
@@ -44,6 +185,7 @@ class FritzBoxHelper:
         self.lastUpdate = datetime.now()
         self.nextpoll = datetime.now()
         self.reset()
+        self.wlan = Wlan()
 
     def dumpConfig(self):
         Domoticz.Debug(
@@ -60,6 +202,7 @@ class FritzBoxHelper:
 
     def reset(self):
         self.stopped = False
+        self.fc = None
         self.fcStatus = None
         self.model = None
         self.is_linked = None
@@ -75,9 +218,11 @@ class FritzBoxHelper:
     def connect(self):
         Domoticz.Debug("Try to get FritzStatus Connection")
 
-        # import fritzconnection as fc
+        # all params ae optional an can handle it, if they are empty
+        # so for pw free status mode, this works as well
         self.fcStatus = FritzStatus(
-            address=self.host
+            address=self.host,
+            user=self.user, password=self.password
         )
         Domoticz.Debug("status: {}".format(self.fcStatus))
         return self.fcStatus
@@ -92,10 +237,10 @@ class FritzBoxHelper:
         self.errorMsg = None
 
     def verifyUpdate(self):
-        if(self.last_external_ip != self.external_ip or
-           self.last_is_connected != self.is_connected or
-           self.last_max_bit_rate != self.max_bit_rate or
-           self.previousError is True
+        if(self.last_external_ip != self.external_ip
+           or self.last_is_connected != self.is_connected
+           or self.last_max_bit_rate != self.max_bit_rate
+           or self.previousError is True
            ):
             self.needUpdate = True
         else:
@@ -105,6 +250,16 @@ class FritzBoxHelper:
         self.last_is_connected = self.is_connected
         self.last_max_bit_rate = self.max_bit_rate
         Domoticz.Debug("updated needed?: {}".format(self.needUpdate))
+
+    def readWlanStatus(self):
+        Domoticz.Debug("read Wlan status")
+        try:
+            self.wlan.setFc(self.fbGetFc())
+            self.wlan.readStatus()
+        except (Exception) as e:
+            # no prob, wlan should handle error it self
+            self.wlan.setMyError(e)
+            Domoticz.Error("Error on readStatus: msg '{}'; hasError:{}".format(e, str(self.hasError)))
 
     def readStatus(self):
         Domoticz.Debug("read status for {}".format(self.host))
@@ -122,7 +277,8 @@ class FritzBoxHelper:
             # ('bytes received:', fs.bytes_received),
             self.max_bit_rate = fs.str_max_bit_rate
             self.verifyUpdate()
-
+            # self.wlan.setFc(self.fbGetFc())
+            # self.wlan.readStatus()
         except (Exception) as e:
             self.setMyError(e)
             Domoticz.Error("Error on readStatus: msg '{}'; hasError:{}".format(e, str(self.hasError)))
@@ -175,3 +331,34 @@ class FritzBoxHelper:
 
         s = self.getSummary()
         Domoticz.Log(s)
+
+    def fbGetFc(self):
+        if(isNotBlank(self.user) and isNotBlank(self.password)):
+            #  first try with fritz status
+            if(self.fcStatus):
+                self.fc = self.fcStatus.fc
+            if(self.fc is None):
+                self.fc = FritzConnection(address=self.host,
+                                          user=self.user, password=self.password)
+            return self.fc
+        else:
+            raise Exception("ConfigError - Password and User required")
+
+    def getWlan(self):
+        return self.wlan
+
+
+def isBlank(myString):
+    if myString and myString.strip():
+        # myString is not None AND myString is not empty or blank
+        return False
+    # myString is None OR myString is empty or blank
+    return True
+
+
+def isNotBlank(myString):
+    if myString and myString.strip():
+        # myString is not None AND myString is not empty or blank
+        return True
+    # myString is None OR myString is empty or blank
+    return False
