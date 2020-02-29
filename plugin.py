@@ -19,7 +19,7 @@
             <li>uses fritz box model as name for devices</li>
             <li>easily turn guest wifi on or off</li>
             <li>activate WPS mode for guest wifi</li>
-            <li>leave user/password empty and remove wifi from used to "unused" devices - and you can run FB Plugin in password free mode FB Status/<li>
+            <li>leave user/password empty and remove wifi from used to "unused" devices - and you can run FB Plugin in password free mode FB Status</li>
         </ul>
         <h3>Devices</h3>
         <ul style="list-style-type:square">
