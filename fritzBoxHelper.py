@@ -167,6 +167,7 @@ class Wlan:
                                          arguments=arg)
         r = result['NewX_AVM-DE_WPSStatus']
         Domoticz.Debug("WLan:{} WpsEnable:{} => isEnabled:{}".format(self.nr, enable, r))
+        self.lastIsWpsEnabled = r
         return result
         # h = fc.call_action('WLANConfiguration3', 'X_AVM-DE_GetWPSInfo')
         # print(h["NewX_AVM-DE_WPSStatus"])
@@ -185,7 +186,10 @@ class FritzBoxHelper:
         self.lastUpdate = datetime.now()
         self.nextpoll = datetime.now()
         self.reset()
-        self.wlan = Wlan()
+        # guest wif
+        self.wlan3 = Wlan(nr=3)
+        # standard wifi
+        self.wlan1 = Wlan(nr=1)
 
     def dumpConfig(self):
         Domoticz.Debug(
@@ -210,6 +214,8 @@ class FritzBoxHelper:
         self.external_ip = None
         self.uptime = None
         self.max_bit_rate = None
+        self.bytes_received = None
+        self.bytes_sent = None
         self.last_external_ip = None
         self.last_is_connected = None
         self.last_max_bit_rate = None
@@ -252,14 +258,27 @@ class FritzBoxHelper:
         Domoticz.Debug("updated needed?: {}".format(self.needUpdate))
 
     def readWlanStatus(self):
+        """
+        init fc and reads current statuts from fritz boxs.
+        Reads WLan3 aka Guest Wifi and
+        Wlan1 normal Wifi
+        """
         Domoticz.Debug("read Wlan status")
         try:
-            self.wlan.setFc(self.fbGetFc())
-            self.wlan.readStatus()
+            self.wlan3.setFc(self.fbGetFc())
+            self.wlan3.readStatus()
         except (Exception) as e:
             # no prob, wlan should handle error it self
-            self.wlan.setMyError(e)
-            Domoticz.Error("Error on readStatus: msg '{}'; hasError:{}".format(e, str(self.hasError)))
+            self.wlan3.setMyError(e)
+            Domoticz.Error("Error on readStatus: wlan3 msg '{}'; hasError:{}".format(e, str(self.hasError)))
+
+        try:
+            self.wlan1.setFc(self.fbGetFc())
+            self.wlan1.readStatus()
+        except (Exception) as e:
+            # no prob, wlan should handle error it self
+            self.wlan1.setMyError(e)
+            Domoticz.Error("Error on readStatus: wlan1 msg '{}'; hasError:{}".format(e, str(self.hasError)))
 
     def readStatus(self):
         Domoticz.Debug("read status for {}".format(self.host))
@@ -276,9 +295,11 @@ class FritzBoxHelper:
             # bytes send:', fs.bytes_sent),
             # ('bytes received:', fs.bytes_received),
             self.max_bit_rate = fs.str_max_bit_rate
+            self.bytes_received = fs.bytes_received
+            self.bytes_sent = fs.bytes_sent
             self.verifyUpdate()
-            # self.wlan.setFc(self.fbGetFc())
-            # self.wlan.readStatus()
+            # self.wlan3.setFc(self.fbGetFc())
+            # self.wlan3.readStatus()
         except (Exception) as e:
             self.setMyError(e)
             Domoticz.Error("Error on readStatus: msg '{}'; hasError:{}".format(e, str(self.hasError)))
@@ -310,19 +331,32 @@ class FritzBoxHelper:
                  self.max_bit_rate))
         return s
 
+    def getMegabytesReceived(self):
+        return bytesTo(self.bytes_received)
+
+    def getMegabytesSent(self):
+        return bytesTo(self.bytes_sent)
+
     def getSummary(self):
         s = ("model = {}"
              "\tis_linked = {}"
              "\tis_connected = {}"
              "\texternal_ip = {}"
              "\tuptime = {}"
-             "\tmax_bit_rate = {}".format(
+             "\tmax_bit_rate = {}"
+             "\treceived = {}"
+             "\tsent = {}"
+             .format(
                  self.model,
                  self.is_linked,
                  self.is_connected,
                  self.external_ip,
                  self.uptime,
-                 self.max_bit_rate))
+                 self.max_bit_rate,
+                 convertHumanbytes(self.bytes_received),
+                 convertHumanbytes(self.bytes_sent),
+
+             ))
         return s
 
     def dumpStatus(self):
@@ -344,8 +378,25 @@ class FritzBoxHelper:
         else:
             raise Exception("ConfigError - Password and User required")
 
-    def getWlan(self):
-        return self.wlan
+    def getWlan(self, nr: int = 3):
+        """returns matching wlan object
+
+        Keyword Arguments:
+            nr {int} -- AVM Wlan Number (default: {3})
+
+        Returns:
+            [Wlan] -- related Wlan object
+        """
+        if(nr == 3):
+            return self.getWlan3()
+        elif(nr == 1):
+            return self.getWlan1()
+
+    def getWlan3(self):
+        return self.wlan3
+
+    def getWlan1(self):
+        return self.wlan1
 
 
 def isBlank(myString):
@@ -362,3 +413,42 @@ def isNotBlank(myString):
         return True
     # myString is None OR myString is empty or blank
     return False
+
+
+def bytesTo(bytes: float, to: str = 'm', bsize: int = 1024):
+    """convert bytes to megabytes, etc.
+       sample code:
+           print('mb= ' + str(bytesTo(314575262000000, 'm')))
+       sample output:
+           mb= 300002347.946
+           https://gist.github.com/shawnbutts/3906915
+
+    """
+
+    a = {'k': 1, 'm': 2, 'g': 3, 't': 4, 'p': 5, 'e': 6}
+    r = float(bytes)
+    for i in range(a[to]):
+        r = r / bsize
+
+    return(r)
+
+
+def convertHumanbytes(B):
+    '''Return the given bytes as a human friendly KB, MB, GB, or TB string
+    https://stackoverflow.com/questions/12523586/python-format-size-application-converting-b-to-kb-mb-gb-tb
+    '''
+    B = float(B)
+    KB = float(1024)
+    MB = float(KB ** 2)  # 1,048,576
+    GB = float(KB ** 3)  # 1,073,741,824
+    TB = float(KB ** 4)  # 1,099,511,627,776
+    if B < KB:
+        return '{0} {1}'.format(B, 'Bytes' if 0 == B > 1 else 'Byte')
+    elif KB <= B < MB:
+        return '{0:.2f} KB'.format(B / KB)
+    elif MB <= B < GB:
+        return '{0:.2f} MB'.format(B / MB)
+    elif GB <= B < TB:
+        return '{0:.2f} GB'.format(B / GB)
+    elif TB <= B:
+        return '{0:.2f} TB'.format(B / TB)
