@@ -1,7 +1,7 @@
 # domoticz-FritzBox
 [![PyPI pyversions](https://img.shields.io/badge/python-3.6%20|%203.7%20|%203.8-blue.svg)]() [![Plugin version](https://img.shields.io/badge/version-0.6.3-red.svg)](https://github.com/belzetrigger/domoticz-FritzPresence/branches/)
 
-Adds Virtual Hardware for your [Fritz!Box](https://en.avm.de/, 'Fritz!Box are quite famous router from avm') within domoticz. That devices show connection information and enables you to control guest Wifi.
+Adds Virtual Hardware for your [Fritz!Box](https://en.avm.de/, 'Fritz!Box are quite famous router from avm') within domoticz. That devices show connection information and enables you to control your Wifi.
 
 
 | Device                | Images                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
