@@ -13,8 +13,7 @@ Adds Virtual Hardware for your [Fritz!Box](https://en.avm.de/, 'Fritz!Box are qu
 |                       |
 | counter               | <img src='https://github.com/belzetrigger/domoticz-FritzBox/raw/master/resources/counter_received_1.PNG' width="200" alt="counter - received"> <br>                                                                                                                                                                                                                                                                                                                                                                                                                                                      
  <img src='https://github.com/belzetrigger/domoticz-FritzBox/raw/master/resources/counter_sent_1.PNG' width="200" alt="counter - sent"> <br>
- <img src='https://github.com/belzetrigger/domoticz-FritzBox/raw/master/resources/counter_received_2_data.PNG' width="200" alt="counter - details">
- |
+ <img src='https://github.com/belzetrigger/domoticz-FritzBox/raw/master/resources/counter_received_2_data.PNG' width="200" alt="counter - details"> |
 
 
 ## Summary
