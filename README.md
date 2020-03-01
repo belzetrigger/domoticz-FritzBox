@@ -82,10 +82,9 @@ sys.path.append('/usr/lib/python3/dist-packages')
 | password | keep in mind, domoticz stores it plain in the database!!!! So really create a new user with restricted rights |
    
 ## Versions
-| Version | Note                                                             |
-| ------- | ---------------------------------------------------------------- |
-| 0.6.3   | counter for sent/recieved megabytes <br>switch for standard wifi |
-
+| Version  | Note                                                             |
+| -------- | ---------------------------------------------------------------- |
+| 0.6.3    | counter for sent/recieved megabytes <br>switch for standard wifi |
 | 0.6.2    | now allows you to control your guest wifi                                          |
 | 0.6.x    | works with new fritzconnection 1.2.1 and so without need of lxml but Python >= 3.6 |
 | <= 0.5.x | worked with fritzconnection 0.6.x and 0.8.x, needs lxml                            |
