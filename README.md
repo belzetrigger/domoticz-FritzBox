@@ -44,6 +44,7 @@ Icons used are from [DomoticzIcons](https://drive.google.com/folderview?id=0B-ZL
 - Python >= 3.6 (mainly depending on requirements for fritzconnection)
 - install needed python modules:
    - fritzconnection Version 1.2.1
+   - you can use `pip3 install -r requirements.txt` 
 - clone project
     - go to `domoticz/plugins` directory 
     - clone the project
