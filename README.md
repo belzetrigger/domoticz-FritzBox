@@ -98,7 +98,7 @@ sys.path.append('/usr/lib/python3/dist-packages')
 - On Synology NAS, up to now, they official support python 3.5. So you might use a previous version of this plugin or use community python.
 
 ## State
-In development. Currently only this three devices integrated. Guest Wifi is new and there fore might be a bit unstable. The other two run now quite a while on my machine without big issues.
+In development. Guest Wifi is now more stable especially on refresh status for WPS.  Counters are new and behave a bit different than Fritz!Box Online Monitor. Means there is always a delta in the way FritzBox is shwoing the daily usage.
 
 ## Developing
 For TR064 actions codes see [AVMs Documentation](https://avm.de/fileadmin/user_upload/Global/Service/Schnittstellen/wlanconfigSCPD.pdf)<br>
