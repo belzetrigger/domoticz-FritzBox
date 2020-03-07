@@ -17,18 +17,18 @@
             <li>checks connection state of FritzBox</li>
             <li>shows details of connections</li>
             <li>uses fritz box model as name for devices</li>
-            <li>easily turn guest wifi on or off</li>
-            <li>activate WPS mode for guest wifi</li>
-            <li>activate WPS mode for standard wifi</li>
-            <li>leave user/password empty and remove wifi from used to "unused" devices - and you can run FB Plugin in password free mode FB Status</li>
+            <li>easily turn guest WiFi on or off</li>
+            <li>activate WPS mode for guest WiFi</li>
+            <li>activate WPS mode for standard WiFi</li>
+            <li>leave user/password empty and remove WiFi from used to "unused" devices - and you can run FB Plugin in password free mode FB Status</li>
             <li>counter for sent/received mega bytes</li>
         </ul>
         <h3>Devices</h3>
         <ul style="list-style-type:square">
             <li>switch - shows if Box is connected or not</li>
             <li>alarm - shows details of your box and if not connected is red</li>
-            <li>selector switch - turn guest Wifi on/off or activate WPS</li>
-            <li>selector switch - activate WPS for normal Wifi</li>
+            <li>selector switch - turn guest WiFi on/off or activate WPS</li>
+            <li>selector switch - activate WPS for normal WiFi</li>
             <li>counter items for sent and received mega bytes</li>
         </ul>
         <h3>Configuration</h3>
@@ -69,18 +69,18 @@ sys.path.append('/usr/lib/python3/dist-packages')
 from fritzBoxHelper import FritzBoxHelper
 
 # config
-WLAN1_NAME = "Wifi"        # Name of the device shown in domoticz, standard 'GuestWifi'
+WLAN1_NAME = "WiFi"        # Name of the device shown in domoticz, standard 'WiFi'
 
 
-WLAN3_NAME = "GuestWifi"        # Name of the device shown in domoticz, standard 'GuestWifi'
+WLAN3_NAME = "GuestWiFi"        # Name of the device shown in domoticz, standard 'GuestWiFi'
 WLAN_ENABLE_WPS = 23            # number we use internal to mark a switch, to turn on wps as well
 
 ERROR_THRESHOLD = 2             # how many times an error fb error can happen, before we show Error also in domoticz, standard: 2
 ICON_FritzBox = "FritzBoxWan"   # icon used for fritz box switch and alert
-ICON_WIFI = "FritzBoxWifi"           # normal wifi icon
-ICON_WIFI_WPS = "FritzBoxWPS"     # icon set if wps is used
+ICON_WIFI = "FritzBoxWifi"      # normal WiFi icon
+ICON_WIFI_WPS = "FritzBoxWPS"   # icon set if wps is used
 
-# wifi
+# WiFi
 UNIT_WIFI_GUEST_IDX = 3
 UNIT_WIFI_GUEST_IMG = ICON_WIFI
 UNIT_WIFI_GUEST_NAME = WLAN3_NAME
@@ -235,10 +235,10 @@ class BasePlugin:
                         self.switchWlan(unit=Unit, nr=1, enable=WLAN_ENABLE_WPS, baseName=UNIT_WIFI_NRML_NAME)
                         updateImage(Unit, ICON_WIFI_WPS)
                     else:
-                        Domoticz.Error("For normal wifi only wps works at the moment")
+                        Domoticz.Error("For normal WiFi only wps works at the moment")
 
         except (Exception) as e:
-            Domoticz.Error("Error on deal with wifi unit {}: msg '{}';".format(Unit, e))
+            Domoticz.Error("Error on deal with WiFi unit {}: msg '{}';".format(Unit, e))
 
     def switchWlan(self, unit: int = 3, nr: int = 3, enable: int = 1, baseName: str = WLAN3_NAME):
         Domoticz.Debug("switchWlan no:{} to {}".format(nr, enable))
@@ -277,7 +277,7 @@ class BasePlugin:
         Devices[unit].Update(enable, state, Name=baseName + ':' + state + ' ' + ssid)
 
     def onHeartbeatWlan(self, unit: int = 3, wlanNr: int = 3, baseName: str = WLAN3_NAME):
-        Domoticz.Debug("onHeartbeatWlan - Unit: {}  Wifi: {}".format(unit, wlanNr))
+        Domoticz.Debug("onHeartbeatWlan - Unit: {}  WiFi: {}".format(unit, wlanNr))
         wlan = self.fritz.getWlan(wlanNr)
         if(wlan and wlan.hasError is False):
             Domoticz.Debug("Wlan status {} ".format(wlan.getSummary()))
@@ -465,7 +465,7 @@ def createDevices(wifiGuestOpts, wifiNrmlOpt):
                         Used=1).Create()
         Domoticz.Log("Devices[2] created.")
 
-    # wifi
+    # WiFi
     if UNIT_WIFI_GUEST_IDX not in Devices:
         Domoticz.Device(Name=UNIT_WIFI_GUEST_NAME, Unit=UNIT_WIFI_GUEST_IDX, TypeName="Selector Switch",
                         Used=1,
