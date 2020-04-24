@@ -38,7 +38,7 @@ def bytesto(bytes: float, to: str = 'mb', bsize: int = 1024):
     """convert bytes to megabytes, etc.
        sample code:
            print('mb= ' + str(bytesto(314575262000000, 'm')))
-       sample output: 
+       sample output:
            mb= 300002347.946
     """
 
@@ -54,9 +54,9 @@ def runTest(fh: FritzBoxHelper):
     fh.dumpConfig()
     fh.readStatus()
     fh.dumpStatus()
-    print("need Update: {}".format(fh.needUpdate))
+    print("need Update: {}".format(fh.needsUpdate()))
     fh.readStatus()
-    print("need Update: {}".format(fh.needUpdate))
+    print("need Update: {}".format(fh.needsUpdate()))
     print("summary: {}".format(fh.getSummary()))
     print("summary short: {}".format(fh.getShortSummary()))
     print("summary short: {}".format(fh.getShortSummary("; ")))
@@ -64,6 +64,9 @@ def runTest(fh: FritzBoxHelper):
     print("name:\t{}".format(fh.getDeviceName()))
     print("nameMB:\t{}".format(fh.getDeviceNameWithMB()))
     print("nameEIP:\t{}".format(fh.getDeviceNameWithEIP()))
+
+    print("getMegabytesReceived:\t{}".format(fh.getMegabytesReceived()))
+    print("getMegabytesSent:\t{}".format(fh.getMegabytesSent()))
 
     # print("date: {} level:{} txt: {} name: {}".format(y.getNearestDate(),
     #

@@ -1,5 +1,5 @@
 # domoticz-FritzBox
-[![PyPI pyversions](https://img.shields.io/badge/python-3.6%20|%203.7%20|%203.8-blue.svg)]() [![Plugin version](https://img.shields.io/badge/version-0.6.3-red.svg)](https://github.com/belzetrigger/domoticz-FritzPresence/branches/)
+[![PyPI pyversions](https://img.shields.io/badge/python-3.6%20|%203.7%20|%203.8-blue.svg)]() [![Plugin version](https://img.shields.io/badge/version-0.6.4-red.svg)](https://github.com/belzetrigger/domoticz-FritzPresence/branches/)
 
 Adds Virtual Hardware for your [Fritz!Box](https://en.avm.de/, 'Fritz!Box are quite famous router from avm') within domoticz. That devices show connection information and enables you to control your WiFi.
 
@@ -40,11 +40,12 @@ Icons used are from [DomoticzIcons](https://drive.google.com/folderview?id=0B-ZL
  
   
 ## Installation and Setup
-- a running Domoticz, tested with 4.10717 and Python 3.8
+- a running Domoticz, tested with version 2020.1 and Python 3.7
 - Python >= 3.6 (mainly depending on requirements for fritzconnection)
 - install needed python modules:
    - fritzconnection Version 1.2.1
-   - you can use `pip3 install -r requirements.txt` 
+   - you can use `sudo pip3 install -r requirements.txt` 
+   - might be worth testing with fritzconnection works - just run `fritzconnection`
 - clone project
     - go to `domoticz/plugins` directory 
     - clone the project
@@ -53,17 +54,19 @@ Icons used are from [DomoticzIcons](https://drive.google.com/folderview?id=0B-ZL
         git clone https://github.com/belzetrigger/domoticz-FritzBox.git
         ```
 - or just download, unzip and copy to `domoticz/plugins` 
-- make sure downloaded modules are in path eg. sitepackages python paths or change in plugin.py the path
-```bash
-import sys
-sys.path
-sys.path.append('/usr/lib/python3/dist-packages')
-# for synology python3 from community
-# sys.path.append('/volume1/@appstore/python3/lib/python3.5/site-packages')
-# for synology sys.path.append('/volume1/@appstore/py3k/usr/local/lib/python3.5/site-packages')
-# for windows check if installed packages as admin or user...
-# sys.path.append('C:\\Program Files (x86)\\Python37-32\\Lib\\site-packages')
-```
+- no need on Raspbian for sys path adaption if using sudo for pip3
+- some extra work for Windows or Synology, make sure downloaded modules are in path eg. site-packages python paths or change in plugin.py / fritzHelper.py path
+  - example adaption:
+    ```bash
+    import sys
+    sys.path
+    sys.path.append('/usr/lib/python3/dist-packages')
+    # for synology python3 from community
+    # sys.path.append('/volume1/@appstore/python3/lib/python3.5/site-packages')
+    # for synology sys.path.append('/volume1/@appstore/py3k/usr/local/lib/python3.5/site-packages')
+    # for windows check if installed packages as admin or user...
+    # sys.path.append('C:\\Program Files (x86)\\Python37-32\\Lib\\site-packages')
+    ```
 - restart Domoticz service
 - Now go to **Setup**, **Hardware** in your Domoticz interface. There add
 **Fritz!Box Plugin**.
@@ -76,7 +79,7 @@ sys.path.append('/usr/lib/python3/dist-packages')
 | Debug       | if True, the log will hold a lot more output. Its good if something does not work like expected. |
 
 
-|          | to control guest WiFi                                                                                         |
+|          | to control WiFi                                                                                               |
 | -------- | ------------------------------------------------------------------------------------------------------------- |
 | user     | name of the user set up in fritz box                                                                          |
 | password | keep in mind, domoticz stores it plain in the database!!!! So really create a new user with restricted rights |
@@ -84,12 +87,14 @@ sys.path.append('/usr/lib/python3/dist-packages')
 ## Versions
 | Version  | Note                                                                               |
 | -------- | ---------------------------------------------------------------------------------- |
+| 0.6.4    | <li>removed pw free mode</li> <li>adapt counter for sent/received megabytes </li>  |
 | 0.6.3    | counter for sent/received megabytes <br>switch for standard WiFi                   |
 | 0.6.2    | now allows you to control your guest WiFi                                          |
 | 0.6.x    | works with new fritzconnection 1.2.1 and so without need of lxml but Python >= 3.6 |
 | <= 0.5.x | worked with fritzconnection 0.6.x and 0.8.x, needs lxml                            |
 
 ## Bugs and ToDos
+- counter needs still improvements
 - rework standard WiFi / Wlan1 and add or integrate 5ghz WLAN in switch
 - for WiFi-Selector Switch the BigText always shows Off, I did not found a way to change it.
 - sometimes the Devices[idx].Used is incorrect, json shows correct value but on python it is still 0. So we do update even if not used!

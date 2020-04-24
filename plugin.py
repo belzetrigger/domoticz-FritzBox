@@ -4,7 +4,7 @@
 #
 """
 <plugin key="FritzBox" name="Fritz!Box Plugin"
-    author="belze" version="0.6.3" >
+    author="belze" version="0.6.4" >
     <!--
     wikilink="https://github.com/belzetrigger/domoticz-FritzBox"
     externallink=""
@@ -20,7 +20,6 @@
             <li>easily turn guest WiFi on or off</li>
             <li>activate WPS mode for guest WiFi</li>
             <li>activate WPS mode for standard WiFi</li>
-            <li>leave user/password empty and remove WiFi from used to "unused" devices - and you can run FB Plugin in password free mode FB Status</li>
             <li>counter for sent/received mega bytes</li>
         </ul>
         <h3>Devices</h3>
@@ -37,9 +36,9 @@
     <params>
         <param field="Mode1" label="Hostname or IP" width="200px" required="true"
         default="fritz.box"/>
-        <param field="Mode2" label="User" width="200px" required="false"
+        <param field="Mode2" label="User" width="200px" required="true"
         />
-        <param field="Mode3" label="Password" width="200px" required="false"
+        <param field="Mode3" label="Password" width="200px" required="true"
         password="true"
         />
         <param field="Mode4" label="Update every x minutes" width="200px"
@@ -68,64 +67,77 @@ sys.path.append('/usr/lib/python3/dist-packages')
 # sys.path.append('C:\\Program Files (x86)\\Python37-32\\Lib\\site-packages')
 from fritzBoxHelper import FritzBoxHelper
 
+PARAM_PASS: str = 'Mode3'  # parameter that holds password
+
 # config
-WLAN1_NAME = "WiFi"        # Name of the device shown in domoticz, standard 'WiFi'
+WLAN1_NAME: str = "WiFi"        # Name of the device shown in domoticz, standard 'WiFi'
 
 
-WLAN3_NAME = "GuestWiFi"        # Name of the device shown in domoticz, standard 'GuestWiFi'
-WLAN_ENABLE_WPS = 23            # number we use internal to mark a switch, to turn on wps as well
+WLAN3_NAME: str = "GuestWiFi"        # Name of the device shown in domoticz, standard 'GuestWiFi'
+WLAN_ENABLE_WPS: int = 23            # number we use internal to mark a switch, to turn on wps as well
 
-ERROR_THRESHOLD = 2             # how many times an error fb error can happen, before we show Error also in domoticz, standard: 2
-ICON_FritzBox = "FritzBoxWan"   # icon used for fritz box switch and alert
-ICON_WIFI = "FritzBoxWifi"      # normal WiFi icon
-ICON_WIFI_WPS = "FritzBoxWPS"   # icon set if wps is used
+ERROR_THRESHOLD: int = 2             # how many times an error fb error can happen, before we show Error also in domoticz, standard: 2
+ICON_FritzBox: str = "FritzBoxWan"   # icon used for fritz box switch and alert
+ICON_WIFI: str = "FritzBoxWifi"      # normal WiFi icon
+ICON_WIFI_WPS: str = "FritzBoxWPS"   # icon set if wps is used
 
+UNIT_FB_SWITCH_IDX: int = 1
+UNIT_FB_SWITCH_NAME: str = "Fritz!Box"
+UNIT_FB_ALERT_IDX: int = 2
+UNIT_FB_ALERT_NAME: str = "Fritz!Box"
 # WiFi
-UNIT_WIFI_GUEST_IDX = 3
-UNIT_WIFI_GUEST_IMG = ICON_WIFI
-UNIT_WIFI_GUEST_NAME = WLAN3_NAME
+UNIT_WIFI_GUEST_IDX: int = 3
+UNIT_WIFI_GUEST_IMG: str = ICON_WIFI
+UNIT_WIFI_GUEST_NAME: str = WLAN3_NAME
 
-UNIT_WIFI_NRML_IDX = 4
-UNIT_WIFI_NRML_IMG = ICON_WIFI
-UNIT_WIFI_NRML_NAME = WLAN1_NAME
+UNIT_WIFI_NRML_IDX: int = 4
+UNIT_WIFI_NRML_IMG: str = ICON_WIFI
+UNIT_WIFI_NRML_NAME: str = WLAN1_NAME
 
 # counter
-UNIT_SENT_IDX = 5
-UNIT_SENT_IMG = ICON_FritzBox
-UNIT_SENT_NAME = "Sent MB"
+UNIT_SENT_IDX: int = 5
+UNIT_SENT_IMG: str = ICON_FritzBox
+UNIT_SENT_NAME: str = "Sent MB"
 
-UNIT_RECEIVED_IDX = 6
-UNIT_RECEIVED_NAME = "Received MB"
-UNIT_RECEIVED_IMG = ICON_FritzBox
+UNIT_RECEIVED_IDX: int = 6
+UNIT_RECEIVED_NAME: str = "Received MB"
+UNIT_RECEIVED_IMG: str = ICON_FritzBox
+
+# UNIT_RECEIVED_IDX_DBG: int = 7
+# UNIT_RECEIVED_NAME_DBG: str = "DBG: Received MB"
+
 
 """
-as there is bug sometime in Used == 1
+as there is bug sometimes in Used == 1
 we can turn it off here and always update
 """
-IGNORE_USED_STATE = True
+IGNORE_USED_STATE: bool = True
 
 
 class BasePlugin:
     enabled = False
 
     def __init__(self):
-        self.fritz = None
-        self.debug = False
-        self.error = False
-        self.nextpoll = datetime.now()
-        self.host = None
-        self.user = None
-        self.password = None
-        self.pollinterval = 60 * 5
-        self.errorCounter = 0
+        self.fritz: FritzBoxHelper = None
+        self.debug: bool = False
+        self.error: bool = False
+        self.nextpoll: datetime = datetime.now()
+        self.host: str = None
+        self.user: str = None
+        self.password: str = None
+        self.pollinterval: int = 60 * 5
+        self.errorCounter: int = 0
         self.wlanGuestOptions = {}
 
     def onStart(self):
         self.errorCounter = 0
-        if Parameters["Mode5"] == 'Debug':
+        if Parameters["Mode5"] == 'Debug' or Parameters["Mode5"] == 'True':
             self.debug = True
             Domoticz.Debugging(1)
             DumpConfigToLog()
+            #Domoticz.Log("Debugger started, use 'telnet 0.0.0.0 4444' to connect")
+            #import rpdb
+            # rpdb.Rpdb().set_trace()
         else:
             Domoticz.Debugging(0)
 
@@ -137,9 +149,10 @@ class BasePlugin:
         except:
             Domoticz.Error("Invalid polling interval parameter")
         else:
-            if temp < 5:
-                temp = 5  # minimum polling interval
-                Domoticz.Error("Specified polling interval too short: changed to 5 minutes")
+
+            if temp < 1:
+                temp = 1  # minimum polling interval
+                Domoticz.Error("Specified polling interval too short: changed to 1 better are 3 minutes")
             elif temp > (60):
                 temp = (60)  # maximum polling interval is 1 hour
                 Domoticz.Error("Specified polling interval too long: changed to 1 hour")
@@ -178,18 +191,20 @@ class BasePlugin:
         createDevices(self.wlanGuestOptions, self.wlanNrmlOptions)
 
         # init with empty data
-        updateDevice(1, 0, "Init - No Data")
-        updateDevice(2, 0, "Init - No Data")
+        updateDevice(UNIT_FB_SWITCH_IDX, 0, "Init - No Data")
+        updateDevice(UNIT_FB_ALERT_IDX, 0, "Init - No Data")
         updateDevice(UNIT_WIFI_GUEST_IDX, 0, "Init - No Data", UNIT_WIFI_GUEST_NAME)
         updateDevice(UNIT_WIFI_NRML_IDX, 0, "Init - No Data", UNIT_WIFI_NRML_NAME)
-        updateImage(1, ICON_FritzBox)
-        updateImage(2, ICON_FritzBox)
+        updateImage(UNIT_FB_SWITCH_IDX, ICON_FritzBox)
+        updateImage(UNIT_FB_ALERT_IDX, ICON_FritzBox)
         # WIFI
         updateImage(UNIT_WIFI_GUEST_IDX, UNIT_WIFI_GUEST_IMG)
         updateImage(UNIT_WIFI_NRML_IDX, UNIT_WIFI_NRML_IMG)
         # Counter
-        updateImage(UNIT_SENT_IDX, UNIT_SENT_IMG)
-        updateImage(UNIT_RECEIVED_IDX, UNIT_RECEIVED_IMG)
+        # 1st does not work
+        # 2nd looks like breaks version 2020.1
+        # updateImage(UNIT_SENT_IDX, UNIT_SENT_IMG)
+        # updateImage(UNIT_RECEIVED_IDX, UNIT_RECEIVED_IMG)
 
     def onStop(self):
         self.fritz.stop()
@@ -335,8 +350,8 @@ class BasePlugin:
 
                 if(self.errorCounter >= ERROR_THRESHOLD):
                     Domoticz.Debug("Error and threshold reached -> so show error on devices")
-                    updateDevice(1, 0, t, 'Fritz!Box - Error')
-                    updateDevice(2, 3, t)
+                    updateDevice(UNIT_FB_SWITCH_IDX, 0, t, 'Fritz!Box - Error')
+                    updateDevice(UNIT_FB_ALERT_IDX, 3, t)
                     # TODO switch to off?
                     # updateImage(1, 'FritzBoxWan48_Off')
                 else:
@@ -346,19 +361,23 @@ class BasePlugin:
                 # always update counter
                 r = self.fritz.getMegabytesReceived()
                 s = self.fritz.getMegabytesSent()
+                totalR = self.fritz.getMegabytesReceivedTotal()
                 updateDevice(UNIT_SENT_IDX, 0, "{}" .format(s), alwaysUpdate=True)
                 updateDevice(UNIT_RECEIVED_IDX, 0, "{}".format(r), alwaysUpdate=True)
+                # debugging / testing
+                # updateDevice(UNIT_RECEIVED_IDX_DBG, 0, "{}".format(totalR), alwaysUpdate=True)
 
                 # check if we need update for basic fb items
-                if self.fritz.needUpdate is True:
+                if self.fritz.needsUpdate() is True:
                     alarm = 1
                     connected = 1
                     if(self.fritz.is_connected is False):
                         alarm = 4
                         connected = 0
                     # device 1 == switch
-                    updateDevice(1, connected, "", self.fritz.getDeviceNameWithMB())
-                    updateDevice(2, alarm, self.fritz.getShortSummary("; "), self.fritz.getDeviceNameWithMB())
+                    updateDevice(UNIT_FB_SWITCH_IDX, connected, "", self.fritz.getDeviceNameWithMB())
+                    updateDevice(UNIT_FB_ALERT_IDX, alarm, self.fritz.getShortSummary(
+                        "; "), self.fritz.getDeviceNameWithMB())
 
                 # force init wlan status
                 self.fritz.readWlanStatus()
@@ -427,7 +446,11 @@ def onHeartbeat():
 def DumpConfigToLog():
     for x in Parameters:
         if Parameters[x] != "":
-            Domoticz.Debug("'" + x + "':'" + str(Parameters[x]) + "'")
+            value: str = str(Parameters[x])
+
+            if(x == PARAM_PASS):
+                value = 'xxx'
+            Domoticz.Debug("{}:\t{}".format(x, value))
     Domoticz.Debug("Device count: " + str(len(Devices)))
     for x in Devices:
         Domoticz.Debug("Device:           " + str(x) + " - " + str(Devices[x]))
@@ -454,14 +477,15 @@ def createDevices(wifiGuestOpts, wifiNrmlOpt):
     this creates the alarm device for fritz box
     '''
     # create the mandatory child devices if not yet exist
-    if 1 not in Devices:
-        Domoticz.Device(Name="Fritz!Box", Unit=1, TypeName="Switch",
+
+    if UNIT_FB_SWITCH_IDX not in Devices:
+        Domoticz.Device(Name=UNIT_FB_SWITCH_NAME, Unit=UNIT_FB_SWITCH_IDX, TypeName="Switch",
                         Options={"Custom": ("1;Foo")}, Image=102, Used=1).Create()
         updateImage(1, 'FritzBoxWan')
         Domoticz.Log("Devices[1] created.")
 
-    if 2 not in Devices:
-        Domoticz.Device(Name="Fritz!Box", Unit=2, TypeName="Alert",
+    if UNIT_FB_ALERT_IDX not in Devices:
+        Domoticz.Device(Name=UNIT_FB_ALERT_NAME, Unit=UNIT_FB_ALERT_IDX, TypeName="Alert",
                         Used=1).Create()
         Domoticz.Log("Devices[2] created.")
 
@@ -481,24 +505,43 @@ def createDevices(wifiGuestOpts, wifiNrmlOpt):
     # counter
     # TODO: using counter or managed counter=
     # managed: Type=243, Subtype=33, Switchtype=3, Used=1,
+    # incremental: Type: 243 SubType Id=28
+    # standard counter: Type: 113
+    # Domoticz.Device(Name="My Counter", Unit=2, TypeName="Counter Incremental")
+    options = {"ValueUnits": "MB",
+               "ValueQuantity": UNIT_SENT_NAME}
     if UNIT_SENT_IDX not in Devices:
-        Domoticz.Device(Name=UNIT_SENT_NAME, Unit=UNIT_SENT_IDX, Type=113, Subtype=0,
-                        Switchtype=3, Used=1,
-                        Options={"ValueUnits": "MB",
-                                 "ValueQuantity": UNIT_SENT_NAME}
+        Domoticz.Device(Name=UNIT_SENT_NAME, Unit=UNIT_SENT_IDX,
+                        Type=243, Subtype=28, Switchtype=3,
+                        # TypeName="Counter Incremental",
+                        Used=1,
+                        Description="this counter holds the sent mega bytes",
+                        Options=options
                         ).Create()
-        Domoticz.Log("Devices[5] created.")
+        Domoticz.Log("Devices[{}] = '{}' created.".format(UNIT_SENT_IDX, UNIT_SENT_NAME))
 
     if UNIT_RECEIVED_IDX not in Devices:
-        Domoticz.Device(Name=UNIT_RECEIVED_NAME, Unit=UNIT_RECEIVED_IDX, Type=113, Subtype=0,
-                        Switchtype=3, Used=1,
+        Domoticz.Device(Name=UNIT_RECEIVED_NAME, Unit=UNIT_RECEIVED_IDX,
+                        Type=243, Subtype=28, Switchtype=3,
+                        Used=1,
+                        Description="this counter holds the received mega bytes",
                         Options={"ValueUnits": "MB",
                                  "ValueQuantity": UNIT_RECEIVED_NAME}
                         ).Create()
         # Domoticz.Device(Name="MB Sent", Unit=4,  TypeName="RFXMeter",
-        Domoticz.Log("Devices[UNIT_RECEIVED_IDX] created.")
 
-
+        Domoticz.Log("Devices[{}] = '{}' created.".format(UNIT_RECEIVED_IDX, UNIT_RECEIVED_NAME))
+    # play with counter types
+    #  # managed: Type=243, Subtype=33, Switchtype=3, Used=1,
+    # if (UNIT_RECEIVED_IDX_DBG) not in Devices:
+    #    Domoticz.Device(Name=UNIT_RECEIVED_NAME_DBG, Unit=UNIT_RECEIVED_IDX_DBG,
+    #                    Type=113, Subtype=0, Switchtype=3,
+    #                    Used=1,
+    #                    Description="DEBUG: TEST managed counter holds the received mega bytes",
+    #                    Options={"ValueUnits": "MB",
+    #                             "ValueQuantity": UNIT_RECEIVED_NAME}
+    #                   ).Create()
+   
 # Update Device into database
 
 
@@ -506,12 +549,13 @@ def updateDevice2(Unit, nValue, sValue, sName='', AlwaysUpdate=False):
     # Make sure that the Domoticz device still exists (they could already be deleted) before updating it
     if Unit in Devices:
         if Devices[Unit].nValue != nValue or Devices[Unit].sValue != sValue or AlwaysUpdate is True:
-            if(len(sName) <= 0):
+            if(not sName):
                 Devices[Unit].Update(nValue, str(sValue))
             else:
                 # Devices[Unit].Update(int(alarmLevel), alarmData, Name=name)
                 Devices[Unit].Update(nValue, str(sValue), Name=sName)
-            Domoticz.Log("Update " + Devices[Unit].Name + ": " + str(nValue) + " - '" + str(sValue) + "'")
+            Domoticz.Log("Update #{} Name: {} nV: {} sV: {}  ".format(
+                Unit, Devices[Unit].Name, str(nValue), str(sValue)))
     return
 
 
@@ -531,11 +575,13 @@ def updateDevice(Unit, alarmLevel, alarmData, name='', alwaysUpdate=False):
     # Make sure that the Domoticz device still exists (they could already be deleted) before updating it
     if Unit in Devices:
         if (alarmData != Devices[Unit].sValue) or (int(alarmLevel) != Devices[Unit].nValue or alwaysUpdate is True):
-            if(len(name) <= 0):
+            if(not name):
                 Devices[Unit].Update(int(alarmLevel), alarmData)
             else:
                 Devices[Unit].Update(int(alarmLevel), alarmData, Name=name)
-            Domoticz.Log("BLZ: Updated to: {} value: {}".format(alarmData, alarmLevel))
+            # Domoticz.Log("BLZ: Updated to: {} value: {}".format(alarmData, alarmLevel))
+            Domoticz.Log("Update #{} Name: {} nV: {} sV: {}  ".format(
+                Unit, Devices[Unit].Name, str(alarmLevel), str(alarmData)))
         else:
             Domoticz.Log("BLZ: Remains Unchanged")
     else:

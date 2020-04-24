@@ -31,23 +31,28 @@ except ImportError:
 
 from fritzconnection.lib.fritzstatus import FritzStatus
 from fritzconnection import FritzConnection
+from typing import Optional, Dict
+
+import locale
+locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
 
 
 class Wlan:
     def __init__(self, nr: int = 3):
-        self.isInit = True
-        self.previousError = None
-        self.hasError = False
-        self.errorMsg = None
+        Domoticz.Debug('Init Wlan #{}'.format(nr))
+        self.isInit: bool = True
+        self.previousError: Optional[Exception] = None
+        self.hasError: bool = False
+        self.errorMsg: Optional[Exception] = None
         self.fc: FritzConnection = None
-        self.nr = nr
-        self.ssid = None
-        self.isEnabled = False
-        self.isWpsEnabled = False
-        self.lastSsid = None
-        self.lastIsEnabled = False
-        self.lastIsWpsEnabled = False
-        self.needUpdate = True  # init with true, so first time update..
+        self.nr: int = nr
+        self.ssid: Optional[str] = None
+        self.isEnabled: bool = False
+        self.isWpsEnabled: bool = False
+        self.lastSsid: Optional[str] = None
+        self.lastIsEnabled: bool = False
+        self.lastIsWpsEnabled: bool = False
+        self.needUpdate: bool = True  # init with true, so first time update..
         self.reset()
 
     def reset(self):
@@ -67,7 +72,7 @@ class Wlan:
     def getSummary(self):
         return "Wlan{} is on:{} and wps on: {}".format(self.nr, self.isEnabled, self.isWpsEnabled)
 
-    def setMyError(self, error):
+    def setMyError(self, error: Exception):
         self.hasError = True
         self.errorMsg = error
 
@@ -84,9 +89,9 @@ class Wlan:
 
     def verifyUpdate(self):
         # TODO always update on init and error
-        if(self.lastIsEnabled != self.isEnabled or
-           self.lastIsWpsEnabled != self.isWpsEnabled or
-           self.isInit
+        if(self.lastIsEnabled != self.isEnabled
+           or self.lastIsWpsEnabled != self.isWpsEnabled
+           or self.isInit
            ):
             self.needUpdate = True
         else:
@@ -144,7 +149,7 @@ class Wlan:
 
     def fbWlanWpsSwitch(self, enable: int = 1):
         # fc = self.fbGetFc()
-        result = []
+        result = dict()
         if(enable == 1):
             # https://avm.de/fileadmin/user_upload/Global/Service/Schnittstellen/wlanconfigSCPD.pdf
             # Actionname: X_AVM - DE_SetWPSConfig
@@ -167,7 +172,7 @@ class Wlan:
                                          arguments=arg)
         r = result['NewX_AVM-DE_WPSStatus']
         Domoticz.Debug("WLan:{} WpsEnable:{} => isEnabled:{}".format(self.nr, enable, r))
-        self.lastIsWpsEnabled = r
+        self.lastIsWpsEnabled = bool(r)
         return result
         # h = fc.call_action('WLANConfiguration3', 'X_AVM-DE_GetWPSInfo')
         # print(h["NewX_AVM-DE_WPSStatus"])
@@ -176,15 +181,16 @@ class Wlan:
 class FritzBoxHelper:
 
     def __init__(self, host: str, user: str, password: str):
+        Domoticz.Debug('Init fritz box helper')
         self.fc = None
-        self.host = host
-        self.user = user
-        self.password = password
-        self.debug = False
-        self.hasError = False
-        self.previousError = False
-        self.lastUpdate = datetime.now()
-        self.nextpoll = datetime.now()
+        self.host: str = host
+        self.user: str = user
+        self.password: str = password
+        self.debug: bool = False
+        self.hasError: bool = False
+        self.previousError: bool = False
+        self.lastUpdate: datetime = datetime.now()
+        self.nextpoll: datetime = datetime.now()
         self.reset()
         # guest wif
         self.wlan3 = Wlan(nr=3)
@@ -205,7 +211,8 @@ class FritzBoxHelper:
         return self.needUpdate
 
     def reset(self):
-        self.stopped = False
+        self.needUpdate: bool = True
+        self.stopped: bool = False
         self.fc = None
         self.fcStatus = None
         self.model = None
@@ -214,8 +221,15 @@ class FritzBoxHelper:
         self.external_ip = None
         self.uptime = None
         self.max_bit_rate = None
-        self.bytes_received = None
-        self.bytes_sent = None
+
+        self.last_bytes_received: int = 0
+        self.bytes_received: int = 0
+        self.delta_bytes_received: int = 0
+
+        self.last_bytes_sent: int = 0
+        self.bytes_sent: int = 0
+        self.delta_bytes_sent: int = 0
+
         self.last_external_ip = None
         self.last_is_connected = None
         self.last_max_bit_rate = None
@@ -243,10 +257,10 @@ class FritzBoxHelper:
         self.errorMsg = None
 
     def verifyUpdate(self):
-        if(self.last_external_ip != self.external_ip
-           or self.last_is_connected != self.is_connected
-           or self.last_max_bit_rate != self.max_bit_rate
-           or self.previousError is True
+        if(self.last_external_ip != self.external_ip or
+           self.last_is_connected != self.is_connected or
+           self.last_max_bit_rate != self.max_bit_rate or
+           self.previousError is True
            ):
             self.needUpdate = True
         else:
@@ -295,8 +309,16 @@ class FritzBoxHelper:
             # bytes send:', fs.bytes_sent),
             # ('bytes received:', fs.bytes_received),
             self.max_bit_rate = fs.str_max_bit_rate
-            self.bytes_received = fs.bytes_received
-            self.bytes_sent = fs.bytes_sent
+
+            # workaround to get 64bit value
+            # self.bytes_received = fs.bytes_received
+            # self.bytes_sent = fs.bytes_sent
+            self.getBytesFromAddOn()
+
+            # md = fs.get_monitor_data()
+
+            # do init bytes and delta
+            self.initAndCalcDelta()
             self.verifyUpdate()
             # self.wlan3.setFc(self.fbGetFc())
             # self.wlan3.readStatus()
@@ -304,8 +326,58 @@ class FritzBoxHelper:
             self.setMyError(e)
             Domoticz.Error("Error on readStatus: msg '{}'; hasError:{}".format(e, str(self.hasError)))
 
+    def getBytesFromAddOn(self):
+        s = self.fcStatus.fc.call_action('WANCommonIFC', 'GetAddonInfos')
+        # Domoticz.Debug("BLZ: new data {}".format(s))
+        self.bytes_sent = int(s['NewX_AVM_DE_TotalBytesSent64'])
+        # Domoticz.Debug("BLZ: new data tx {}".format(self.bytes_sent))
+        self.bytes_received = int(s['NewX_AVM_DE_TotalBytesReceived64'])
+        # Domoticz.Debug("BLZ: new data rx {}".format(self.bytes_received))
+
     def stop(self):
         self.stopped = True
+
+    def initAndCalcDelta(self):
+        # received
+        if(self.last_bytes_received is None):
+            self.last_bytes_received = self.bytes_received
+        self.delta_bytes_received = self.calcDelta(self.last_bytes_received, self.bytes_received, "received")
+        self.last_bytes_received = self.bytes_received
+
+        # sent
+        if(self.last_bytes_sent is None):
+            self.last_bytes_sent = self.bytes_sent
+        self.delta_bytes_sent = self.calcDelta(self.last_bytes_sent, self.bytes_sent, "sent")
+        self.last_bytes_sent = self.bytes_sent
+
+    def calcDelta(self, last: int, current: int, sType: str):
+        delta: int = 0
+        if(last is None or last == 0):
+            last = current
+            Domoticz.Error("restart cnx: ? last None or 0")
+        elif(last > current):
+            # looks like new connection with new calculated counter
+            # this did not really work, looks like AVM does an new calc, so value is not really starts wiht null, feels more like
+            # restore from another 1000 vs 1024 calc
+            # so using just new value is not working delta = current
+            # delta = abs(current - last)
+            # try with just ignoring the last bytes ...
+            # but better use GetAddonInfos
+            delta = 0
+            Domoticz.Error("new cnx: {} lst-crnt: {} - {} = {}".format(sType,
+                                                                       convertHumanbytes(last),
+                                                                       convertHumanbytes(current),
+                                                                       convertHumanbytes(delta)))
+            Domoticz.Error("new cnx: {} lst-crnt: {:n} - {:n} = {:n}".format(sType, last, current, delta))
+
+        else:
+            delta = current - last
+
+        Domoticz.Debug("calcDelta cnx: {} lst-crnt: {:n} - {:n} = {:n} || {}".format(sType,
+                                                                                     last, current,
+                                                                                     delta,
+                                                                                     convertHumanbytes(delta)))
+        return delta
 
     def getDeviceName(self):
         return self.model
@@ -331,11 +403,14 @@ class FritzBoxHelper:
                  self.max_bit_rate))
         return s
 
+    def getMegabytesReceivedTotal(self):
+        return int(bytesTo(self.bytes_received))
+
     def getMegabytesReceived(self):
-        return bytesTo(self.bytes_received)
+        return int(bytesTo(self.delta_bytes_received))
 
     def getMegabytesSent(self):
-        return bytesTo(self.bytes_sent)
+        return int(bytesTo(self.delta_bytes_sent))
 
     def getSummary(self):
         s = ("model = {}"
@@ -346,6 +421,8 @@ class FritzBoxHelper:
              "\tmax_bit_rate = {}"
              "\treceived = {}"
              "\tsent = {}"
+             "\tdelta received = {}"
+             "\tdelta sent = {}"
              .format(
                  self.model,
                  self.is_linked,
@@ -355,6 +432,9 @@ class FritzBoxHelper:
                  self.max_bit_rate,
                  convertHumanbytes(self.bytes_received),
                  convertHumanbytes(self.bytes_sent),
+                 convertHumanbytes(self.delta_bytes_received),
+                 convertHumanbytes(self.delta_bytes_sent),
+
 
              ))
         return s
@@ -437,6 +517,8 @@ def convertHumanbytes(B):
     '''Return the given bytes as a human friendly KB, MB, GB, or TB string
     https://stackoverflow.com/questions/12523586/python-format-size-application-converting-b-to-kb-mb-gb-tb
     '''
+    if(B is None):
+        B = 0
     B = float(B)
     KB = float(1024)
     MB = float(KB ** 2)  # 1,048,576
