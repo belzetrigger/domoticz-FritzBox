@@ -222,11 +222,11 @@ class FritzBoxHelper:
         self.uptime = None
         self.max_bit_rate = None
 
-        self.last_bytes_received: int = 0
+        self.last_bytes_received: int = None
         self.bytes_received: int = 0
         self.delta_bytes_received: int = 0
 
-        self.last_bytes_sent: int = 0
+        self.last_bytes_sent: int = None
         self.bytes_sent: int = 0
         self.delta_bytes_sent: int = 0
 
@@ -310,9 +310,11 @@ class FritzBoxHelper:
             # ('bytes received:', fs.bytes_received),
             self.max_bit_rate = fs.str_max_bit_rate
 
-            # workaround to get 64bit value
-            # self.bytes_received = fs.bytes_received
-            # self.bytes_sent = fs.bytes_sent
+            # Retrieve the bytes counts, also to have some default value
+            # if the 64bit values cannot be retrieved.
+            self.bytes_received = fs.bytes_received
+            self.bytes_sent = fs.bytes_sent
+            # Get the 64bit value
             self.getBytesFromAddOn()
 
             # md = fs.get_monitor_data()
@@ -329,9 +331,11 @@ class FritzBoxHelper:
     def getBytesFromAddOn(self):
         s = self.fcStatus.fc.call_action('WANCommonIFC', 'GetAddonInfos')
         # Domoticz.Debug("BLZ: new data {}".format(s))
-        self.bytes_sent = int(s['NewX_AVM_DE_TotalBytesSent64'])
+        self.bytes_sent = int(s.get('NewTotalBytesSent', self.bytes_sent))
+        self.bytes_sent = int(s.get('NewX_AVM_DE_TotalBytesSent64', self.bytes_sent))
         # Domoticz.Debug("BLZ: new data tx {}".format(self.bytes_sent))
-        self.bytes_received = int(s['NewX_AVM_DE_TotalBytesReceived64'])
+        self.bytes_received = int(s.get('NewTotalBytesReceived', self.bytes_received))
+        self.bytes_received = int(s.get('NewX_AVM_DE_TotalBytesReceived64', self.bytes_received))
         # Domoticz.Debug("BLZ: new data rx {}".format(self.bytes_received))
 
     def stop(self):
