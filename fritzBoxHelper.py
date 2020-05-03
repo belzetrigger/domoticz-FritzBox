@@ -33,8 +33,9 @@ from fritzconnection.lib.fritzstatus import FritzStatus
 from fritzconnection import FritzConnection
 from typing import Optional, Dict
 
-import locale
-locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
+# looks like this breaks some times conversion form string to int.
+# import locale
+# locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
 
 
 class Wlan:
