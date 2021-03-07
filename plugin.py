@@ -97,10 +97,10 @@ UNIT_WIFI_NRML_NAME: str = WLAN1_NAME
 # counter
 UNIT_SENT_IDX: int = 5
 UNIT_SENT_IMG: str = ICON_FritzBox
-UNIT_SENT_NAME: str = "Sent MB"
+UNIT_SENT_NAME: str = "Sent"
 
 UNIT_RECEIVED_IDX: int = 6
-UNIT_RECEIVED_NAME: str = "Received MB"
+UNIT_RECEIVED_NAME: str = "Received"
 UNIT_RECEIVED_IMG: str = ICON_FritzBox
 
 # UNIT_RECEIVED_IDX_DBG: int = 7
